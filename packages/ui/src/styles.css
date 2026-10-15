@@ -748,7 +748,7 @@ body.sheet:not(.focus-mode) .send-row {
   bottom: 0;
   z-index: 1;
   margin: 0;
-  padding: 10px 14px calc(var(--pbp-sheet-bottom, 0px) + 10px);
+  padding: 10px 14px var(--pbp-sheet-bottom, 0px);
   background: var(--pbp-field);
   border-top: 0.5px solid var(--pbp-line-strong);
 }
@@ -769,7 +769,7 @@ button.nav-button {
 }
 
 body.sheet:not(.focus-mode) #app {
-  padding-bottom: calc(var(--pbp-sheet-bottom, 0px) + 96px);
+  padding-bottom: calc(var(--pbp-sheet-bottom, 0px) + 86px);
 }
 
 /* ---------- Diagnostic ---------- */
