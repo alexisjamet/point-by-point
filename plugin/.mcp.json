@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "point-by-point": {
+      "type": "http",
+      "url": "https://point-by-point.brols.workers.dev/mcp"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@point-by-point/server",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "2.0.3",
+    "@modelcontextprotocol/server": "2.3.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261014.1",
+    "@modelcontextprotocol/client": "2.3.1",
+    "typescript": "5.9.3",
+    "vitest": "5.0.4",
+    "wrangler": "4.151.0"
+  },
+  "scripts": {
+    "embed": "node scripts/embed-ui.mjs",
+    "build": "node scripts/embed-ui.mjs && wrangler deploy --dry-run --outdir dist",
+    "dev": "node scripts/embed-ui.mjs && wrangler dev",
+    "deploy": "node scripts/embed-ui.mjs && wrangler deploy",
+    "pretest": "node scripts/embed-ui.mjs",
+    "test": "vitest run",
+    "pretypecheck": "node scripts/embed-ui.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json"
+  }
+}

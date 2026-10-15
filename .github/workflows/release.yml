@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Check the tag matches the versions
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for file in package.json plugin/.claude-plugin/plugin.json; do
+            actual=$(node -p "require('./$file').version")
+            [ "$actual" = "$version" ] || { echo "$file is $actual, tag is $version"; exit 1; }
+          done
+          actual=$(node -p "require('./.claude-plugin/marketplace.json').plugins[0].version")
+          [ "$actual" = "$version" ] || { echo "marketplace.json is $actual, tag is $version"; exit 1; }
+      - name: Build (interface URI versioned from package.json)
+        run: pnpm build
+      - name: Type check
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test
+      - name: Install Playwright browser
+        run: pnpm --filter @point-by-point/ui exec playwright install --with-deps chromium
+      - name: Interface tests
+        run: pnpm e2e
+      - name: Deploy the Worker
+        run: pnpm --filter @point-by-point/server exec wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Package the skill
+        run: cd plugin/skills && zip -r "$GITHUB_WORKSPACE/point-by-point-skill.zip" point-by-point
+      - name: Publish the GitHub release
+        run: gh release create "$GITHUB_REF_NAME" point-by-point-skill.zip --title "$GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

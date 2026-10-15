@@ -1,0 +1,10 @@
+{
+  "name": "point-by-point",
+  "version": "0.1.0",
+  "description": "Annotate any sentence of Claude's responses and reply point by point in a single message.",
+  "author": { "name": "Alexis Jamet" },
+  "homepage": "https://github.com/alexisjamet/point-by-point",
+  "repository": "https://github.com/alexisjamet/point-by-point",
+  "license": "MIT",
+  "keywords": ["annotation", "mcp-app", "reply", "review", "feedback"]
+}

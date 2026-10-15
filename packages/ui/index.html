@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Point by point</title>
+  </head>
+  <body>
+    <main id="app">
+      <article id="content" class="response waiting" aria-live="polite"></article>
+      <section id="composer" class="composer" hidden>
+        <p id="hint" class="hint"></p>
+        <div class="remark">
+          <textarea id="remark" rows="2"></textarea>
+          <div class="note-actions remark-actions">
+            <button type="button" id="remark-done" class="note-done"></button>
+          </div>
+        </div>
+        <div class="send-row">
+          <span id="count" class="count"></span>
+          <span id="status" class="status" role="status" hidden></span>
+          <button type="button" id="send" class="primary"></button>
+        </div>
+        <p id="error" class="error" role="alert" hidden></p>
+        <div id="fallback" class="fallback" hidden>
+          <button type="button" id="copy"></button>
+          <textarea id="fallback-text" rows="4" readonly></textarea>
+        </div>
+        <p id="storage-notice" class="storage-notice" hidden></p>
+      </section>
+    </main>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

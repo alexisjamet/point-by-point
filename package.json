@@ -1,0 +1,19 @@
+{
+  "name": "point-by-point-monorepo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.11.2",
+  "scripts": {
+    "build": "pnpm --filter @point-by-point/ui build && pnpm --filter @point-by-point/server build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "e2e": "pnpm --filter @point-by-point/ui e2e",
+    "dev": "pnpm build && pnpm --filter @point-by-point/server dev",
+    "deploy": "pnpm build && pnpm --filter @point-by-point/server run deploy"
+  },
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=22"
+  }
+}

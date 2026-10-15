@@ -1,0 +1,678 @@
+import {
+  App,
+  applyDocumentTheme,
+  applyHostFonts,
+  applyHostStyleVariables,
+  type McpUiHostContext,
+} from "@modelcontextprotocol/ext-apps";
+import { compose, normalizeSpaces } from "./compose";
+import { renderDiagnostic, isDiagnosticRequest } from "./diagnostic";
+import { createDraftStore, hashText, type Draft, type DraftAnnotation } from "./drafts";
+import { pickLang, t, type Lang, type Strings } from "./i18n";
+import { watchRecency } from "./recency";
+import { renderMarkdown } from "./render";
+import {
+  indexPhrases,
+  offsetsToRange,
+  pointToOffset,
+  segmentContainer,
+  type PhraseEntry,
+  type Sentence,
+} from "./segment";
+import "./styles.css";
+
+declare const __APP_VERSION__: string;
+
+interface Annotation extends DraftAnnotation {
+  id: number;
+  note: HTMLElement;
+  textarea: HTMLTextAreaElement;
+  range: Range | null;
+}
+
+const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
+const content = $<HTMLElement>("#content");
+const composer = $<HTMLElement>("#composer");
+const remarkField = $<HTMLTextAreaElement>("#remark");
+const sendButton = $<HTMLButtonElement>("#send");
+const countLabel = $<HTMLElement>("#count");
+const statusLabel = $<HTMLElement>("#status");
+const errorBox = $<HTMLElement>("#error");
+const fallbackBox = $<HTMLElement>("#fallback");
+const fallbackText = $<HTMLTextAreaElement>("#fallback-text");
+const copyButton = $<HTMLButtonElement>("#copy");
+const hintLabel = $<HTMLElement>("#hint");
+const storageNotice = $<HTMLElement>("#storage-notice");
+
+const coarsePointer = window.matchMedia("(pointer: coarse)");
+const store = createDraftStore();
+
+let lang: Lang = "en";
+let s: Strings = t(lang);
+let ready = false;
+let markdown = "";
+let draftKey = "";
+let previous = false;
+let sentences: Sentence[] = [];
+let phrases: PhraseEntry[] = [];
+let nextId = 1;
+const annotations = new Map<number, Annotation>();
+const noteSlots = new WeakMap<HTMLElement, HTMLElement>();
+let fullscreen = false;
+let focusTarget: HTMLElement | null = null;
+
+const app = new App({ name: "point-by-point", version: __APP_VERSION__ }, {}, { autoResize: true });
+
+// ---------- Host context ----------
+
+function applyHostContext(context: McpUiHostContext | undefined, initial = false) {
+  if (!context) return;
+  if (context.theme) applyDocumentTheme(context.theme);
+  if (context.styles?.variables) applyHostStyleVariables(context.styles.variables);
+  if (context.styles?.css?.fonts) applyHostFonts(context.styles.css.fonts);
+  if (context.displayMode) setFullscreenClass(context.displayMode === "fullscreen");
+  if (!context.locale && !initial) return;
+  const nextLang = pickLang(context.locale ?? navigator.language);
+  if (nextLang !== lang) {
+    lang = nextLang;
+    s = t(lang);
+    applyLabels();
+  }
+}
+
+function isTouch(): boolean {
+  const caps = app.getHostContext()?.deviceCapabilities;
+  return coarsePointer.matches || (caps?.touch === true && caps.hover !== true);
+}
+
+function applyLabels() {
+  document.documentElement.lang = lang;
+  remarkField.placeholder = s.remarkPlaceholder;
+  remarkField.setAttribute("aria-label", s.remarkLabel);
+  sendButton.textContent = s.send;
+  copyButton.textContent = s.copy;
+  $<HTMLButtonElement>("#remark-done").textContent = s.done;
+  hintLabel.textContent = isTouch() ? s.hintTouch : s.hint;
+  storageNotice.textContent = s.noStorage;
+  if (!statusLabel.hidden) statusLabel.textContent = s.sent;
+  for (const sentence of sentences) labelSentence(sentence);
+  for (const annotation of annotations.values()) labelNote(annotation);
+  updateCount();
+}
+
+// ---------- Rendering ----------
+
+function fullMarkdown(args: Record<string, unknown> | undefined): string | null {
+  const body = typeof args?.markdown === "string" ? args.markdown : null;
+  if (body === null) return null;
+  const title = typeof args?.title === "string" ? args.title.trim() : "";
+  return title ? `# ${title}\n\n${body}` : body;
+}
+
+let pendingPartial: string | null = null;
+function renderPartial(text: string) {
+  if (ready) return;
+  const scheduled = pendingPartial !== null;
+  pendingPartial = text;
+  if (scheduled) return;
+  requestAnimationFrame(() => {
+    if (!ready && pendingPartial !== null) {
+      content.replaceChildren(renderMarkdown(pendingPartial));
+      content.classList.remove("waiting");
+      content.classList.add("streaming");
+    }
+    pendingPartial = null;
+  });
+}
+
+function renderFinal(text: string, toolCallId: string | number | undefined) {
+  if (ready && text === markdown) return;
+  markdown = text;
+  pendingPartial = null;
+  for (const annotation of annotations.values()) annotation.note.remove();
+  annotations.clear();
+
+  if (isDiagnosticRequest(text)) {
+    content.classList.remove("streaming", "waiting");
+    renderDiagnostic(content, app, s, () => isTouch(), store.durable);
+    composer.hidden = true;
+    return;
+  }
+
+  content.replaceChildren(renderMarkdown(text));
+  content.classList.remove("streaming", "waiting");
+  sentences = segmentContainer(content, lang);
+  phrases = indexPhrases(content);
+  for (const sentence of sentences) {
+    sentence.focusSpan.tabIndex = 0;
+    sentence.focusSpan.setAttribute("role", "button");
+    labelSentence(sentence);
+  }
+  draftKey = `${toolCallId ?? ""}:${hashText(text)}`;
+  ready = true;
+  composer.hidden = false;
+  storageNotice.hidden = store.durable;
+  restoreDraft();
+  updateCount();
+}
+
+function labelSentence(sentence: Sentence) {
+  const start = sentence.text.length > 60 ? `${sentence.text.slice(0, 60)}…` : sentence.text;
+  const annotated = sentenceAnnotation(sentence.id) !== undefined;
+  sentence.focusSpan.setAttribute("aria-label", annotated ? s.editAnnotation(start) : s.annotate(start));
+}
+
+// ---------- Annotations ----------
+
+function sentenceAnnotation(sentenceId: number): Annotation | undefined {
+  for (const annotation of annotations.values()) {
+    if (annotation.kind === "sentence" && annotation.sentence === sentenceId) return annotation;
+  }
+  return undefined;
+}
+
+/** Where notes for a block go: right under it, or under the table for a cell. */
+function slotFor(block: HTMLElement): HTMLElement {
+  const host = block.closest<HTMLElement>("table") ?? block;
+  let slot = noteSlots.get(host);
+  if (slot?.isConnected) return slot;
+  slot = document.createElement("div");
+  slot.className = "note-slot";
+  if (host.matches("li")) {
+    const nested = Array.from(host.children).find((child) => child.matches("ul, ol"));
+    host.insertBefore(slot, nested ?? null);
+  } else {
+    host.after(slot);
+  }
+  noteSlots.set(host, slot);
+  return slot;
+}
+
+function blockAt(offset: number): HTMLElement {
+  const entry = phrases.find((candidate) => offset >= candidate.start && offset < candidate.end) ?? phrases.at(-1)!;
+  const sentence = sentences[Number(entry.el.dataset.s)];
+  return sentence?.block ?? entry.el;
+}
+
+function createAnnotation(draft: DraftAnnotation, options: { focus: boolean }): Annotation {
+  const note = document.createElement("div");
+  note.className = "note";
+  note.setAttribute("role", "group");
+  const quote = document.createElement("p");
+  quote.className = "note-quote";
+  quote.textContent = draft.quote;
+  const textarea = document.createElement("textarea");
+  textarea.rows = 2;
+  textarea.value = draft.text;
+  const actions = document.createElement("div");
+  actions.className = "note-actions";
+  const done = document.createElement("button");
+  done.type = "button";
+  done.className = "note-done";
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "note-remove";
+  actions.append(done, remove);
+  note.append(quote, textarea, actions);
+
+  const annotation: Annotation = {
+    ...draft,
+    id: nextId++,
+    note,
+    textarea,
+    range: draft.kind === "selection" ? offsetsToRange(phrases, draft.start, draft.end) : null,
+  };
+  note.dataset.id = String(annotation.id);
+  labelNote(annotation);
+
+  const slot = slotFor(blockAt(draft.start));
+  const after = Array.from(slot.children).find(
+    (child) => (annotations.get(Number((child as HTMLElement).dataset.id))?.start ?? Infinity) > draft.start,
+  );
+  slot.insertBefore(note, after ?? null);
+  annotations.set(annotation.id, annotation);
+
+  textarea.addEventListener("input", () => {
+    annotation.text = textarea.value;
+    autoGrow(textarea);
+    statusLabel.hidden = true;
+    hideError();
+    updateCount();
+    scheduleSave();
+  });
+  textarea.addEventListener("focus", () => {
+    if (isTouch() && !fullscreen) enterFocusMode(note);
+  });
+  textarea.addEventListener("keydown", (event) => onFieldKeydown(event, annotation));
+  done.addEventListener("click", () => leaveFocusMode());
+  remove.addEventListener("click", () => removeAnnotation(annotation));
+
+  refreshHighlights();
+  if (annotation.sentence !== undefined) {
+    const sentence = sentences[annotation.sentence];
+    if (sentence) labelSentence(sentence);
+  }
+  requestAnimationFrame(() => autoGrow(textarea));
+  if (options.focus) openNote(annotation);
+  return annotation;
+}
+
+function labelNote(annotation: Annotation) {
+  const short = annotation.quote.length > 60 ? `${annotation.quote.slice(0, 60)}…` : annotation.quote;
+  annotation.note.setAttribute("aria-label", s.noteLabel(short));
+  annotation.textarea.placeholder = s.notePlaceholder;
+  annotation.textarea.setAttribute("aria-label", s.notePlaceholder);
+  annotation.note.querySelector(".note-done")!.textContent = s.done;
+  annotation.note.querySelector(".note-remove")!.textContent = s.remove;
+}
+
+/** Brings a note into view: focus on desktop; on touch, no focus so the keyboard stays closed. */
+function openNote(annotation: Annotation) {
+  if (!isTouch()) {
+    annotation.textarea.focus();
+    return;
+  }
+  annotation.note.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  if (app.getHostContext()?.availableDisplayModes?.includes("fullscreen")) {
+    void enterFullscreen(annotation.note);
+  }
+}
+
+function annotateSentence(sentence: Sentence) {
+  const existing = sentenceAnnotation(sentence.id);
+  if (existing) {
+    openNote(existing);
+    return;
+  }
+  const first = phrases.find((entry) => entry.el === sentence.spans[0]);
+  const last = phrases.find((entry) => entry.el === sentence.spans.at(-1));
+  createAnnotation(
+    {
+      kind: "sentence",
+      sentence: sentence.id,
+      start: first?.start ?? 0,
+      end: last?.end ?? 0,
+      quote: sentence.text,
+      text: "",
+    },
+    { focus: true },
+  );
+  statusLabel.hidden = true;
+  scheduleSave();
+}
+
+function annotateSelection(range: Range) {
+  const start = pointToOffset(phrases, range.startContainer, range.startOffset);
+  const end = pointToOffset(phrases, range.endContainer, range.endOffset);
+  const quote = quoteOf(range);
+  if (end <= start || quote.length <= 2) return;
+  for (const annotation of annotations.values()) {
+    if (annotation.kind === "selection" && annotation.start === start && annotation.end === end) {
+      openNote(annotation);
+      return;
+    }
+  }
+  window.getSelection()?.removeAllRanges();
+  createAnnotation({ kind: "selection", start, end, quote, text: "" }, { focus: true });
+  statusLabel.hidden = true;
+  scheduleSave();
+}
+
+/** The selected response text, without the text of any note it crosses. */
+function quoteOf(range: Range): string {
+  const fragment = range.cloneContents();
+  for (const note of fragment.querySelectorAll(".note-slot, .note")) note.remove();
+  for (const block of fragment.querySelectorAll("p, li, h1, h2, h3, h4, h5, h6, td, th, pre, dt, dd")) {
+    block.append(" ");
+  }
+  return normalizeSpaces(fragment.textContent ?? "");
+}
+
+function removeAnnotation(annotation: Annotation) {
+  if (focusTarget === annotation.note) leaveFocusMode({ restoreFocus: false });
+  annotations.delete(annotation.id);
+  annotation.note.remove();
+  refreshHighlights();
+  const target = focusSpanFor(annotation);
+  if (annotation.sentence !== undefined) {
+    const sentence = sentences[annotation.sentence];
+    if (sentence) labelSentence(sentence);
+  }
+  target?.focus({ preventScroll: true });
+  updateCount();
+  scheduleSave();
+}
+
+/** The sentence that keyboard focus returns to when leaving or removing an annotation. */
+function focusSpanFor(annotation: DraftAnnotation): HTMLElement | undefined {
+  if (annotation.sentence !== undefined) return sentences[annotation.sentence]?.focusSpan;
+  const entry = phrases.find((candidate) => annotation.start < candidate.end);
+  return entry ? sentences[Number(entry.el.dataset.s)]?.focusSpan : undefined;
+}
+
+// ---------- Highlights ----------
+
+const supportsHighlights = typeof CSS !== "undefined" && "highlights" in CSS && typeof Highlight !== "undefined";
+
+function refreshHighlights() {
+  const annotated = new Set<number>();
+  const ranges: Range[] = [];
+  for (const annotation of annotations.values()) {
+    if (annotation.sentence !== undefined) annotated.add(annotation.sentence);
+    else if (annotation.range) ranges.push(annotation.range);
+  }
+  for (const sentence of sentences) {
+    for (const span of sentence.spans) span.classList.toggle("annotated", annotated.has(sentence.id));
+  }
+  if (supportsHighlights) {
+    CSS.highlights.set("pbp-selection", new Highlight(...ranges));
+  } else {
+    for (const entry of phrases) {
+      entry.el.classList.toggle("annotated-passage", ranges.some((range) => range.intersectsNode(entry.el)));
+    }
+  }
+}
+
+// ---------- Mobile focus mode and fullscreen ----------
+
+function setFullscreenClass(on: boolean) {
+  fullscreen = on;
+  document.body.classList.toggle("fullscreen", on);
+  if (!on && focusTarget && document.body.classList.contains("sheet")) leaveFocusMode({ fromHost: true });
+}
+
+async function enterFullscreen(target: HTMLElement) {
+  try {
+    const result = await app.requestDisplayMode({ mode: "fullscreen" });
+    if (result.mode !== "fullscreen") return;
+    setFullscreenClass(true);
+    document.body.classList.add("sheet");
+    enterFocusMode(target);
+  } catch {
+    // Refused or unsupported: the focus mode takes over when the field gets focus.
+  }
+}
+
+function enterFocusMode(target: HTMLElement) {
+  if (focusTarget && focusTarget !== target) focusTarget.classList.remove("active");
+  focusTarget = target;
+  target.classList.add("active");
+  document.body.classList.add("focus-mode");
+}
+
+function leaveFocusMode(options: { restoreFocus?: boolean; fromHost?: boolean } = {}) {
+  const target = focusTarget;
+  if (!target) return;
+  focusTarget = null;
+  target.classList.remove("active");
+  document.body.classList.remove("focus-mode", "sheet");
+  (document.activeElement as HTMLElement | null)?.blur();
+  if (fullscreen && !options.fromHost) {
+    void app.requestDisplayMode({ mode: "inline" }).catch(() => undefined);
+    setFullscreenClass(false);
+  }
+  requestAnimationFrame(() => target.scrollIntoView({ block: "nearest" }));
+  if (options.restoreFocus !== false && !isTouch()) target.querySelector("textarea")?.focus();
+}
+
+// ---------- Keyboard ----------
+
+function onFieldKeydown(event: KeyboardEvent, annotation: Annotation | null) {
+  if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+    event.preventDefault();
+    void send();
+    return;
+  }
+  if (event.key !== "Escape") return;
+  event.preventDefault();
+  if (focusTarget) leaveFocusMode({ restoreFocus: false });
+  (event.target as HTMLElement).blur();
+  if (annotation) focusSpanFor(annotation)?.focus();
+}
+
+content.addEventListener("keydown", (event) => {
+  if (!ready || (event.key !== "Enter" && event.key !== " ")) return;
+  const phrase = (event.target as HTMLElement).closest<HTMLElement>(".phrase[data-s]");
+  if (!phrase || phrase.closest(".note")) return;
+  event.preventDefault();
+  const sentence = sentences[Number(phrase.dataset.s)];
+  if (sentence) annotateSentence(sentence);
+});
+
+remarkField.addEventListener("keydown", (event) => onFieldKeydown(event, null));
+
+// ---------- Pointer ----------
+
+content.addEventListener("click", (event) => {
+  const target = event.target as HTMLElement;
+  const link = target.closest("a");
+  if (link) {
+    event.preventDefault();
+    const href = link.href;
+    if (/^(https?:|mailto:)/i.test(href)) void app.openLink({ url: href }).catch(() => undefined);
+    return;
+  }
+  if (!ready || target.closest(".note")) return;
+  const selection = window.getSelection();
+  if (selection && !selection.isCollapsed && content.contains(selection.anchorNode)) return;
+  const phrase = target.closest<HTMLElement>(".phrase[data-s]");
+  const sentence = phrase && sentences[Number(phrase.dataset.s)];
+  if (sentence) annotateSentence(sentence);
+});
+
+function selectionInContent(): Range | null {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  const inside = (node: Node) => {
+    const element = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement;
+    return !!element && content.contains(element) && !element.closest(".note");
+  };
+  if (!inside(range.startContainer) || !inside(range.endContainer)) return null;
+  return selection.toString().trim().length > 2 ? range : null;
+}
+
+content.addEventListener("mouseup", () => {
+  if (!ready || isTouch()) return;
+  setTimeout(() => {
+    const range = selectionInContent();
+    if (range) annotateSelection(range);
+  }, 0);
+});
+
+// On touch, the selection handles keep moving after the finger lifts: wait until it settles.
+let selectionTimer: ReturnType<typeof setTimeout> | undefined;
+document.addEventListener("selectionchange", () => {
+  if (!ready || !isTouch()) return;
+  clearTimeout(selectionTimer);
+  selectionTimer = setTimeout(() => {
+    const range = selectionInContent();
+    if (range) annotateSelection(range);
+  }, 900);
+});
+
+// ---------- Remark, counter, drafts ----------
+
+remarkField.addEventListener("input", () => {
+  autoGrow(remarkField);
+  statusLabel.hidden = true;
+  hideError();
+  scheduleSave();
+});
+remarkField.addEventListener("focus", () => {
+  if (isTouch()) enterFocusMode(composer);
+});
+$<HTMLButtonElement>("#remark-done").addEventListener("click", () => leaveFocusMode());
+
+function autoGrow(field: HTMLTextAreaElement) {
+  field.style.height = "auto";
+  field.style.height = `${field.scrollHeight}px`;
+}
+
+function filledCount(): number {
+  let count = 0;
+  for (const annotation of annotations.values()) if (annotation.text.trim()) count++;
+  return count;
+}
+
+function updateCount() {
+  countLabel.textContent = s.count(filledCount());
+}
+
+let saveTimer: ReturnType<typeof setTimeout> | undefined;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveDraft, 250);
+}
+
+function currentDraft(): Draft {
+  return {
+    annotations: Array.from(annotations.values()).map(({ kind, sentence, start, end, quote, text }) => ({
+      kind,
+      sentence,
+      start,
+      end,
+      quote,
+      text,
+    })),
+    remark: remarkField.value,
+  };
+}
+
+function saveDraft() {
+  clearTimeout(saveTimer);
+  if (draftKey) store.save(draftKey, currentDraft());
+}
+
+function restoreDraft() {
+  const draft = store.load(draftKey);
+  if (!draft) return;
+  for (const saved of draft.annotations) {
+    if (saved.kind === "sentence" && (saved.sentence === undefined || !sentences[saved.sentence])) continue;
+    createAnnotation(saved, { focus: false });
+  }
+  remarkField.value = draft.remark;
+  autoGrow(remarkField);
+}
+
+window.addEventListener("pagehide", saveDraft);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") saveDraft();
+});
+
+// ---------- Sending ----------
+
+function hideError() {
+  errorBox.hidden = true;
+  fallbackBox.hidden = true;
+}
+
+function showError(message: string) {
+  errorBox.textContent = message;
+  errorBox.hidden = false;
+}
+
+let sending = false;
+async function send() {
+  if (!ready || sending) return;
+  hideError();
+  const message = compose(Array.from(annotations.values()).map(({ quote, text, start }) => ({ quote, text, order: start })), remarkField.value, {
+    contextLine: previous ? s.previousContext : undefined,
+  });
+  if (!message) {
+    showError(s.nothingToSend);
+    return;
+  }
+
+  sending = true;
+  sendButton.disabled = true;
+  sendButton.textContent = s.sending;
+  try {
+    const result = await app.sendMessage({ role: "user", content: [{ type: "text", text: message }] });
+    if (result.isError) throw new Error("rejected");
+    for (const annotation of Array.from(annotations.values())) {
+      if (!annotation.text.trim()) continue;
+      annotations.delete(annotation.id);
+      annotation.note.remove();
+    }
+    remarkField.value = "";
+    autoGrow(remarkField);
+    refreshHighlights();
+    for (const sentence of sentences) labelSentence(sentence);
+    if (focusTarget) leaveFocusMode({ restoreFocus: false });
+    saveDraft();
+    statusLabel.textContent = s.sent;
+    statusLabel.hidden = false;
+  } catch {
+    showError(s.sendFailed);
+    fallbackText.value = message;
+    fallbackBox.hidden = false;
+  } finally {
+    sending = false;
+    sendButton.disabled = false;
+    sendButton.textContent = s.send;
+    updateCount();
+  }
+}
+
+sendButton.addEventListener("click", () => void send());
+
+copyButton.addEventListener("click", async () => {
+  const text = fallbackText.value;
+  try {
+    await navigator.clipboard.writeText(text);
+    showError(s.copied);
+  } catch {
+    fallbackText.focus();
+    fallbackText.select();
+    const copied = document.execCommand?.("copy") ?? false;
+    showError(copied ? s.copied : s.copyFailed);
+  }
+});
+
+// ---------- Connection ----------
+
+app.addEventListener("toolinputpartial", (params) => {
+  const text = fullMarkdown(params.arguments);
+  if (text !== null) renderPartial(text);
+});
+
+app.addEventListener("toolinput", (params) => {
+  const text = fullMarkdown(params.arguments);
+  if (text === null) return;
+  renderFinal(text, app.getHostContext()?.toolInfo?.id);
+  startRecencyWatch();
+});
+
+// The tool result carries the response's creation time, used to tell earlier responses apart.
+let createdAt: number | null = null;
+let watchingRecency = false;
+function startRecencyWatch() {
+  if (watchingRecency || createdAt === null || !draftKey) return;
+  watchingRecency = true;
+  watchRecency(draftKey, createdAt, () => {
+    previous = true;
+  });
+}
+
+app.addEventListener("toolresult", (params) => {
+  const value = (params.structuredContent as { createdAt?: unknown } | undefined)?.createdAt;
+  if (typeof value !== "number") return;
+  createdAt = value;
+  startRecencyWatch();
+});
+
+app.addEventListener("hostcontextchanged", (params) => applyHostContext(params));
+
+app.onteardown = async () => {
+  saveDraft();
+  return {};
+};
+
+lang = pickLang(navigator.language);
+s = t(lang);
+applyLabels();
+content.textContent = s.loading;
+await app.connect();
+applyHostContext(app.getHostContext(), true);
+if (!ready && content.classList.contains("waiting")) content.textContent = s.loading;
