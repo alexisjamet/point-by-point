@@ -133,6 +133,31 @@ describe("tool list decisions", () => {
     expect(log.mock.calls).toEqual([[`tools/list without ${TOOL_NAME}: 2026 envelope without the ui extension`]]);
   });
 
+  it("traces each 2025 request with its method and the decision taken", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await post({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: { protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "python", version: "1" } },
+    });
+    expect(log.mock.calls).toEqual([
+      ["2025 POST initialize, protocol none, status 200, tool hidden: 2025 initialize without the ui extension"],
+    ]);
+  });
+
+  it("names neither an unknown method nor an odd protocol version in the trace", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await post(
+      { jsonrpc: "2.0", id: 1, method: "conversation-text-must-not-leak" },
+      { "mcp-protocol-version": "conversation text too" },
+    );
+    expect(log).toHaveBeenCalledTimes(1);
+    const [line] = log.mock.calls[0] ?? [];
+    expect(line).toMatch(/^2025 POST other, protocol other, status \d+, tool declared: /);
+    expect(line).not.toContain("conversation");
+  });
+
   it("logs nothing when it exposes the tool", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const reply = await modernToolsList(UI_CAPABILITIES);

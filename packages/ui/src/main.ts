@@ -192,7 +192,7 @@ function sentenceAnnotation(sentenceId: number): Annotation | undefined {
 
 /** Where notes for a block go: right under it, or under the table for a cell. */
 function slotFor(block: HTMLElement): HTMLElement {
-  const host = block.closest<HTMLElement>("table") ?? block;
+  const host = block.closest<HTMLElement>(".table-wrap") ?? block;
   let slot = noteSlots.get(host);
   if (slot?.isConnected) return slot;
   slot = document.createElement("div");
@@ -617,8 +617,15 @@ function goToNote(direction: "previous" | "next") {
   if (!note) return;
   noteAnchor = note;
   note.scrollIntoView({ block: "center" });
+  note.classList.remove("arrived");
+  void note.offsetWidth; // restart the glow when the same note is reached again
+  note.classList.add("arrived");
   updateNoteNav();
 }
+
+content.addEventListener("animationend", (event) => {
+  if (event.animationName === "pbp-arrive") (event.target as HTMLElement).classList.remove("arrived");
+});
 
 previousNoteButton.addEventListener("click", () => goToNote("previous"));
 nextNoteButton.addEventListener("click", () => goToNote("next"));

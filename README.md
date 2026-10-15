@@ -142,9 +142,10 @@ To trust no one but Cloudflare, [run your own copy](#run-your-own-copy-of-the-se
 
 What the code guarantees:
 
-- **No storage, no content logs.** No KV, D1, R2 or Durable Objects. The Worker logs errors and one fixed
-  line when it serves a tool list without the tool (to diagnose a connector that shows no tools),
-  never the markdown or anything else from the request.
+- **No storage, no content logs.** No KV, D1, R2 or Durable Objects. The Worker logs errors and, to
+  diagnose a connector that shows no tools, one line per tool list served without the tool and per
+  2025-protocol request (method name, protocol version, status, whether the tool is declared). These
+  lines are built from fixed strings only: never the markdown or anything else from the request.
 - **No outbound calls**, from the server or the interface. Everything is inlined in one HTML file:
   no CDN script, font or image.
 - **Sanitised rendering.** Markdown goes through `marked` then DOMPurify with a strict allow-list;

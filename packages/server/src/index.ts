@@ -32,16 +32,50 @@ function isInitialize(body: unknown): boolean {
   return methodOf(body) === "initialize";
 }
 
+// Logs name a method or a protocol version only when it is one of these, so a request can never
+// put its own text, which could be conversation text, into a log line.
+const LOGGED_METHODS = new Set([
+  "initialize",
+  "notifications/initialized",
+  "notifications/cancelled",
+  "ping",
+  "server/discover",
+  "tools/list",
+  "tools/call",
+  "resources/list",
+  "resources/templates/list",
+  "resources/read",
+  "prompts/list",
+]);
+const PROTOCOL_VERSION = /^\d{4}-\d{2}-\d{2}$/;
+
+function loggable(value: unknown, allowed: (value: string) => boolean): string {
+  if (value === undefined || value === null) return "none";
+  return typeof value === "string" && allowed(value) ? value : "other";
+}
+
 async function serveMcp(request: Request): Promise<Response> {
   const body = await readJson(request);
+  const method = methodOf(body);
   const { ui, reason } = uiSupportFromRequest(body, request.headers.get("mcp-session-id"));
-  // Hosts keep the tool list, so a list without the tool is worth a trace. The line is a fixed
-  // string: nothing from the request, which could hold conversation text.
-  if (!ui && methodOf(body) === "tools/list") console.log(`tools/list without ${TOOL_NAME}: ${reason}`);
+  // Hosts keep the tool list, so a list without the tool is worth a trace.
+  if (!ui && method === "tools/list") console.log(`tools/list without ${TOOL_NAME}: ${reason}`);
   const headers = new Headers(request.headers);
   headers.delete(UI_HEADER);
   if (ui) headers.set(UI_HEADER, "1");
   const response = await handler.fetch(new Request(request, { headers }));
+
+  // 2025 requests name their method only in the body, out of sight of `wrangler tail`: trace each
+  // one with the decision taken, from fixed strings only.
+  if (!request.headers.has("mcp-method")) {
+    const version = loggable(request.headers.get("mcp-protocol-version"), (v) => PROTOCOL_VERSION.test(v));
+    const name = loggable(method, (m) => LOGGED_METHODS.has(m));
+    const verb = loggable(request.method, (v) => ["GET", "POST", "DELETE"].includes(v));
+    console.log(
+      `2025 ${verb} ${name}, protocol ${version}, status ${response.status}, ` +
+        `tool ${ui ? "declared" : "hidden"}: ${reason}`,
+    );
+  }
 
   // 2025 clients: hand out a session id that carries the UI decision, so later requests can be
   // answered without the server remembering anything.

@@ -45,9 +45,22 @@ export function renderMarkdown(markdown: string, doc: Document = document): Docu
     return fragment;
   }
   const html = marked.parse(markdown, { async: false });
-  return purify.sanitize(html, {
+  const fragment = purify.sanitize(html, {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
     RETURN_DOM_FRAGMENT: true,
   }) as DocumentFragment;
+  for (const table of fragment.querySelectorAll("table")) wrapTable(table, doc);
+  return fragment;
+}
+
+/** A frame around the table, and inside it the part that scrolls sideways when the table is too wide. */
+function wrapTable(table: HTMLTableElement, doc: Document) {
+  const frame = doc.createElement("div");
+  frame.className = "table-wrap";
+  const scroller = doc.createElement("div");
+  scroller.className = "table-scroll";
+  table.replaceWith(frame);
+  scroller.append(table);
+  frame.append(scroller);
 }
