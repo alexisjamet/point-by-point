@@ -109,20 +109,21 @@ test("a table cell's note goes under the table frame, and the markdown alignment
   await expect(frame.locator(".table-wrap .note")).toHaveCount(0);
 });
 
-test("Send stays disabled and the hint shown until a note has text", async ({ page }) => {
+test("Send stays hidden and the hint shown until a note has text", async ({ page }) => {
   const frame = await mount(page);
-  await expect(frame.locator("#send")).toBeDisabled();
+  await expect(frame.locator("#send")).toBeHidden();
   await expect(frame.locator("#hint")).toBeVisible();
   await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
-  await expect(frame.locator("#send")).toBeDisabled();
+  await expect(frame.locator("#send")).toBeHidden();
   await page.keyboard.type("Why?");
+  await expect(frame.locator("#send")).toBeVisible();
   await expect(frame.locator("#send")).toBeEnabled();
   await expect(frame.locator("#hint")).toBeHidden();
   await page.keyboard.press("Backspace");
   await page.keyboard.press("Backspace");
   await page.keyboard.press("Backspace");
   await page.keyboard.press("Backspace");
-  await expect(frame.locator("#send")).toBeDisabled();
+  await expect(frame.locator("#send")).toBeHidden();
   await expect(frame.locator("#hint")).toBeVisible();
   // Cmd/Ctrl+Enter sends nothing either.
   await page.keyboard.press("ControlOrMeta+Enter");
@@ -214,7 +215,6 @@ test("offers a copy fallback when sending fails", async ({ page }) => {
 
 test("speaks French when the host does", async ({ page }) => {
   const frame = await mount(page, { context: { locale: "fr-FR" } });
-  await expect(frame.locator("#send")).toHaveText("Envoyer");
   await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
   await expect(frame.locator(".note textarea")).toHaveAttribute("placeholder", "Ta réponse ou ta question");
   await expect(frame.locator(".note-remove")).toHaveText("Retirer");

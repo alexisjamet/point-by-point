@@ -583,11 +583,12 @@ function filledCount(): number {
 
 function updateCount() {
   const count = filledCount();
-  // Send says how many notes it sends, and waits for one with text; once there is one, the hint has
-  // done its job.
+  // Send says how many notes it sends, and only shows once a note has text; then the hint has done
+  // its job.
   if (!sending) {
     sendButton.textContent = s.sendCount(count);
     sendButton.disabled = count === 0;
+    sendButton.hidden = count === 0;
   }
   hintLabel.hidden = count > 0;
   updateNoteNav();

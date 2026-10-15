@@ -65,6 +65,7 @@ test("between notes in the sheet, Send stays on screen in a long response", asyn
   const markdown = Array.from({ length: 40 }, (_, i) => `Paragraph ${i + 1} has a sentence.`).join("\n\n");
   const frame = await mount(page, { allowFullscreen: true, args: { markdown } });
   await frame.locator(".phrase", { hasText: "Paragraph 1 has a sentence." }).tap();
+  await frame.locator(".note textarea").fill("Why?");
   await frame.locator(".note .note-done").tap();
   await expect(frame.locator("body")).toHaveClass(/sheet/);
   await expect(frame.locator("#send")).toBeInViewport();
@@ -136,7 +137,9 @@ test("between notes, Send sits above the host's reply field", async ({ page }) =
   const markdown = Array.from({ length: 40 }, (_, i) => `Paragraph ${i + 1} has a sentence.`).join("\n\n");
   const frame = await mount(page, { allowFullscreen: true, args: { markdown }, context: { platform: "mobile" } });
   await frame.locator(".phrase", { hasText: "Paragraph 1 has a sentence." }).tap();
+  await frame.locator(".note textarea").fill("Why?");
   await frame.locator(".note .note-done").tap();
+  await expect(frame.locator("#send")).toBeVisible();
   const gap = await frame.locator("#send").evaluate((send) => window.innerHeight - send.getBoundingClientRect().bottom);
   expect(gap).toBeGreaterThanOrEqual(150);
 });
