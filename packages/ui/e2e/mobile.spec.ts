@@ -61,6 +61,18 @@ test("asks for fullscreen when the host offers it, stays there between notes, an
   await expect.poll(displayModes).toEqual(["fullscreen", "inline"]);
 });
 
+test("between notes in the sheet, Send stays on screen in a long response", async ({ page }) => {
+  const markdown = Array.from({ length: 40 }, (_, i) => `Paragraph ${i + 1} has a sentence.`).join("\n\n");
+  const frame = await mount(page, { allowFullscreen: true, args: { markdown } });
+  await frame.locator(".phrase", { hasText: "Paragraph 1 has a sentence." }).tap();
+  await frame.locator(".note .note-done").tap();
+  await expect(frame.locator("body")).toHaveClass(/sheet/);
+  await expect(frame.locator("#send")).toBeInViewport();
+  await frame.locator(".phrase", { hasText: "Paragraph 20 has a sentence." }).scrollIntoViewIfNeeded();
+  await expect(frame.locator("#send")).toBeInViewport();
+  await expect(frame.locator(".phrase", { hasText: "Paragraph 1 has a sentence." })).not.toBeInViewport();
+});
+
 test("sending from the fullscreen sheet returns inline", async ({ page }) => {
   const frame = await mount(page, { allowFullscreen: true });
   await frame.locator(".phrase", { hasText: "First point here." }).tap();
@@ -94,4 +106,13 @@ test("the fullscreen sheet keeps the note below the host title bar", async ({ pa
   await expect(frame.locator("body")).toHaveClass(/sheet/);
   const top = await frame.locator(".note.active").evaluate((note) => note.getBoundingClientRect().top);
   expect(top).toBeGreaterThanOrEqual(100);
+});
+
+test("between notes, Send sits above the host's reply field", async ({ page }) => {
+  const markdown = Array.from({ length: 40 }, (_, i) => `Paragraph ${i + 1} has a sentence.`).join("\n\n");
+  const frame = await mount(page, { allowFullscreen: true, args: { markdown }, context: { platform: "mobile" } });
+  await frame.locator(".phrase", { hasText: "Paragraph 1 has a sentence." }).tap();
+  await frame.locator(".note .note-done").tap();
+  const gap = await frame.locator("#send").evaluate((send) => window.innerHeight - send.getBoundingClientRect().bottom);
+  expect(gap).toBeGreaterThanOrEqual(150);
 });

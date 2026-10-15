@@ -59,14 +59,26 @@ window.mount = async (options) => {
     window.recorded.links.push(url);
     return {};
   };
+  // Like a real host: fullscreen gives the frame the whole screen, and the frame scrolls itself.
+  let inlineHeight = "";
+  let fullscreen = false;
   bridge.onrequestdisplaymode = async ({ mode }) => {
     window.recorded.displayModes.push(mode);
     const granted = mode === "fullscreen" && !options.allowFullscreen ? "inline" : mode;
+    if (granted === "fullscreen" && !fullscreen) {
+      inlineHeight = iframe.style.height;
+      iframe.style.cssText = "position: fixed; inset: 0; width: 100vw; height: 100vh; margin: 0; z-index: 1;";
+    } else if (granted !== "fullscreen" && fullscreen) {
+      iframe.style.cssText = "";
+      iframe.style.height = inlineHeight;
+    }
+    fullscreen = granted === "fullscreen";
     void bridge.sendHostContextChange({ displayMode: granted });
     return { mode: granted };
   };
   bridge.onsizechange = ({ height }) => {
-    if (height !== undefined) iframe.style.height = `${height}px`;
+    if (height !== undefined && !fullscreen) iframe.style.height = `${height}px`;
+    else if (height !== undefined) inlineHeight = `${height}px`;
   };
 
   const initialized = new Promise<void>((resolve) => {

@@ -22,7 +22,10 @@ export const TOOL_DESCRIPTION =
   "annotations back in a single message. Use this tool for EVERY response meant for the user, instead of " +
   "writing the text in the chat. Pass the complete response as markdown. Write nothing else in the chat. " +
   "The user's reply quotes each sentence they react to between backticks, followed by their answer or " +
-  "question; address each point in order, then any general remark at the end.";
+  "question; address each point in order, then any general remark at the end. When there are two points " +
+  "or more, open the answer to each with a blockquote of the user's note alone, cut to about ten words; " +
+  "always open the answer to the general remark the same way. Use blockquotes for nothing else: the " +
+  "interface shows them as the user's points.";
 
 export const TOOL_RESULT_TEXT =
   "Response displayed to the user for annotation. End your turn now without writing anything else: " +

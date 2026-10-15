@@ -391,17 +391,21 @@ function refreshHighlights() {
 // ---------- Mobile focus mode and fullscreen ----------
 
 // In fullscreen, the Claude iOS app lays a translucent title bar (about 100px with the status bar)
-// over the top of the frame without reporting it as a safe area: keep the note below it.
+// over the top of the frame, and its "Reply to Claude" field (about 140px with the home indicator)
+// over the bottom, without reporting either as a safe area: keep the sheet's content between them.
 const MOBILE_FULLSCREEN_HEADER = 100;
+const MOBILE_FULLSCREEN_FOOTER = 150;
 
 function setFullscreenClass(on: boolean) {
   fullscreen = on;
   document.body.classList.toggle("fullscreen", on);
   if (on) {
     const context = app.getHostContext();
-    const reported = context?.safeAreaInsets?.top ?? 0;
-    const header = context?.platform === "mobile" || isTouch() ? MOBILE_FULLSCREEN_HEADER : 0;
-    document.documentElement.style.setProperty("--pbp-sheet-top", `${Math.max(reported, header) + 12}px`);
+    const mobile = context?.platform === "mobile" || isTouch();
+    const top = Math.max(context?.safeAreaInsets?.top ?? 0, mobile ? MOBILE_FULLSCREEN_HEADER : 0);
+    const bottom = Math.max(context?.safeAreaInsets?.bottom ?? 0, mobile ? MOBILE_FULLSCREEN_FOOTER : 0);
+    document.documentElement.style.setProperty("--pbp-sheet-top", `${top + 12}px`);
+    document.documentElement.style.setProperty("--pbp-sheet-bottom", `${bottom}px`);
   }
   if (!on && inSheet()) leaveSheet({ fromHost: true });
 }

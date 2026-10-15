@@ -130,9 +130,29 @@ body {
   margin-top: 0.25em;
 }
 
+/* Claude opens its answer to each of the user's points with a blockquote of the point: it looks
+   like the note the user wrote, so the thread reads at a glance. */
 .response blockquote {
-  border-left: 3px solid var(--pbp-border);
-  padding-left: 0.9em;
+  border: 1px solid var(--pbp-border);
+  border-left: 3px solid var(--pbp-accent);
+  border-radius: var(--pbp-radius);
+  background: var(--pbp-surface);
+  padding: 8px 10px;
+  margin-top: 1.1em;
+  font-family: var(--pbp-sans);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.response blockquote:first-child {
+  margin-top: 0;
+}
+
+.response blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.response blockquote em {
   color: var(--pbp-muted);
 }
 
@@ -492,7 +512,25 @@ body.sheet:not(.focus-mode) .sheet-bar {
 }
 
 body.sheet #app {
-  padding: var(--pbp-sheet-top, 12px) 14px max(12px, var(--pbp-safe-bottom, 0px));
+  padding: var(--pbp-sheet-top, 12px) 14px calc(var(--pbp-sheet-bottom, 0px) + 12px);
+}
+
+/* Between notes, the counter and Send stay at the bottom of the screen, however long the response,
+   above whatever the host lays over the bottom of the frame. */
+body.sheet:not(.focus-mode) .send-row {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 10px 14px calc(var(--pbp-sheet-bottom, 0px) + 10px);
+  background: var(--pbp-field);
+  border-top: 1px solid var(--pbp-border);
+}
+
+body.sheet:not(.focus-mode) #app {
+  padding-bottom: calc(var(--pbp-sheet-bottom, 0px) + 96px);
 }
 
 /* ---------- Diagnostic ---------- */

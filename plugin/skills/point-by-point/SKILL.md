@@ -49,6 +49,27 @@ general remark
 
 Address every point, in order, then the general remark. Answer through `annotate_response` again.
 
+When the user made two points or more, open the answer to each one with a blockquote of their note
+alone (not the sentence it is about), cut to about ten words, so they see which part of your
+response answers what. Then answer below it, in normal paragraphs. Always quote the general remark
+the same way. With a single point, do not quote it; still quote the general remark.
+
+```markdown
+> Back it up first.
+
+Agreed: the migration now starts with a snapshot...
+
+> When exactly?
+
+After the health checks pass...
+
+> Looks good overall.
+
+Thanks...
+```
+
+Use blockquotes only for this: the interface shows them as the user's points.
+
 ## When the tool is not available
 
 If `annotate_response` is not in your tools (the client does not display interfaces), answer
