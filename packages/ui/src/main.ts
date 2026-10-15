@@ -51,6 +51,7 @@ const store = createDraftStore();
 let lang: Lang = "en";
 let s: Strings = t(lang);
 let ready = false;
+let sending = false;
 let markdown = "";
 let draftKey = "";
 let previous = false;
@@ -584,7 +585,11 @@ function filledCount(): number {
 }
 
 function updateCount() {
-  countLabel.textContent = s.count(filledCount());
+  const count = filledCount();
+  countLabel.textContent = s.count(count);
+  // Send waits for a note with text; once there is one, the hint has done its job.
+  if (!sending) sendButton.disabled = count === 0;
+  hintLabel.hidden = count > 0;
   updateNoteNav();
 }
 
@@ -699,7 +704,6 @@ function showError(message: string) {
 // it there, the last batch can be brought back.
 let lastSent: Draft | null = null;
 
-let sending = false;
 async function send() {
   if (!ready || sending) return;
   hideError();

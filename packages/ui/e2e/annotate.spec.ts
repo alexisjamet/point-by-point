@@ -67,7 +67,7 @@ test("clicking an annotated sentence returns to its note without a duplicate", a
   const sentence = frame.locator(".phrase", { hasText: "Keep the old cluster" });
   await sentence.click();
   await page.keyboard.type("Why a week?");
-  await frame.locator("#hint").click();
+  await frame.locator("#count").click();
   await sentence.click();
   await expect(frame.locator(".note")).toHaveCount(1);
   await expect(frame.locator(".note textarea")).toBeFocused();
@@ -109,11 +109,23 @@ test("a table cell's note goes under the table frame, and the markdown alignment
   await expect(frame.locator(".table-wrap .note")).toHaveCount(0);
 });
 
-test("refuses to send nothing", async ({ page }) => {
+test("Send stays disabled and the hint shown until a note has text", async ({ page }) => {
   const frame = await mount(page);
+  await expect(frame.locator("#send")).toBeDisabled();
+  await expect(frame.locator("#hint")).toBeVisible();
   await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
-  await frame.locator("#send").click();
-  await expect(frame.locator("#error")).toBeVisible();
+  await expect(frame.locator("#send")).toBeDisabled();
+  await page.keyboard.type("Why?");
+  await expect(frame.locator("#send")).toBeEnabled();
+  await expect(frame.locator("#hint")).toBeHidden();
+  await page.keyboard.press("Backspace");
+  await page.keyboard.press("Backspace");
+  await page.keyboard.press("Backspace");
+  await page.keyboard.press("Backspace");
+  await expect(frame.locator("#send")).toBeDisabled();
+  await expect(frame.locator("#hint")).toBeVisible();
+  // Cmd/Ctrl+Enter sends nothing either.
+  await page.keyboard.press("ControlOrMeta+Enter");
   expect((await recorded(page)).messages).toEqual([]);
 });
 
