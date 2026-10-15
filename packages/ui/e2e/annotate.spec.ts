@@ -84,6 +84,15 @@ test("a code block is one annotation unit", async ({ page }) => {
   await expect(frame.locator(".note-quote")).toHaveText("npm run migrate");
 });
 
+test("a table cell's note goes under the table frame, and the markdown alignment holds", async ({ page }) => {
+  const markdown = "| Service | Price |\n|---|--:|\n| Fly | 5 $ |\n| E2B | 150 $ |";
+  const frame = await mount(page, { args: { markdown } });
+  await expect(frame.locator("td", { hasText: "150 $" })).toHaveCSS("text-align", "end");
+  await frame.locator(".phrase", { hasText: "E2B" }).click();
+  await expect(frame.locator(".table-wrap + .note-slot .note")).toHaveCount(1);
+  await expect(frame.locator(".table-wrap .note")).toHaveCount(0);
+});
+
 test("refuses to send nothing", async ({ page }) => {
   const frame = await mount(page);
   await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
