@@ -85,6 +85,9 @@ test("in the sheet, the arrows go from note to note", async ({ page }) => {
   await expect(frame.locator("#next-note")).toBeDisabled();
   await frame.locator("#previous-note").tap();
   await expect(note(20)).toBeInViewport();
+  // The note reached lights up for a moment.
+  await expect(note(20)).toHaveClass(/arrived/);
+  await expect(note(20)).not.toHaveClass(/arrived/);
   await frame.locator("#previous-note").tap();
   await expect(note(5)).toBeInViewport();
   await expect(frame.locator("#previous-note")).toBeDisabled();
