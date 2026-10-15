@@ -55,10 +55,14 @@ Server URL: `https://point-by-point.brols.workers.dev/mcp`
 
 ### Claude Code (plugin marketplace)
 
+```sh
+claude plugin marketplace add alexisjamet/point-by-point
+claude plugin install point-by-point@point-by-point
 ```
-/plugin marketplace add alexisjamet/point-by-point
-/plugin install point-by-point@point-by-point
-```
+
+Or in one command: `claude plugin install point-by-point --marketplace alexisjamet/point-by-point`.
+Inside a Claude Code session, the same commands exist as `/plugin marketplace add …` and
+`/plugin install …`. To get a new release: `claude plugin update point-by-point@point-by-point`.
 
 This installs the skill and the connector together. Claude Code's terminal does not render MCP
 Apps, so there the tool stays hidden and responses are normal; the plugin is useful in hosts that
