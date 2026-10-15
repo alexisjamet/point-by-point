@@ -565,6 +565,10 @@ remarkField.addEventListener("focus", () => {
   if (isTouch()) enterFocusMode(composer);
 });
 $<HTMLButtonElement>("#remark-done").addEventListener("click", () => leaveFocusMode());
+// The card around the field is the field: a click in its padding writes in it too.
+remarkField.parentElement!.addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) remarkField.focus();
+});
 
 function autoGrow(field: HTMLTextAreaElement) {
   field.style.height = "auto";
