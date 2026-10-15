@@ -425,13 +425,6 @@ li > .note-slot {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--pbp-accent) 18%, transparent);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .note,
-  .remark {
-    transition: none;
-  }
-}
-
 .note-quote {
   margin: 0 0 8px;
   color: var(--pbp-muted);
