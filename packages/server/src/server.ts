@@ -20,7 +20,8 @@ export const MAX_MARKDOWN_LENGTH = 100_000;
 export const TOOL_DESCRIPTION =
   "Displays your response in an interface where the user can annotate any sentence and send all their " +
   "annotations back in a single message. Use this tool for EVERY response meant for the user, instead of " +
-  "writing the text in the chat. Pass the complete response as markdown. Write nothing else in the chat. " +
+  "writing the text in the chat. Pass the complete response as markdown, sources and follow-up questions " +
+  "included. Write nothing else in the chat, and do not use another widget or a question form instead. " +
   "The user's reply quotes each sentence they react to between backticks, followed by their answer or " +
   "question; address each point in order, then any general remark at the end. When there are two points " +
   "or more, open the answer to each with a blockquote of the user's note alone, cut to about ten words; " +

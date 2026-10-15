@@ -23,6 +23,11 @@ back in a single message.
 3. Write nothing else in the chat, before or after the call: the interface is the response.
    Not even a line announcing it ("The response is open for your annotations"). The tool returns
    a short confirmation; end your turn right after it, without repeating or summarising anything.
+4. Everything goes in the markdown: clarifications, caveats, follow-up questions and the sources
+   list (as markdown links). Nothing is left for a separate message.
+5. Do not present the response through another interface instead: no inline visual widget
+   (diagram, card or form), no multiple-choice question form. Ask clarifying questions as plain
+   sentences in the markdown, so the user can answer them by annotating.
 
 Keep sentences self-contained where you can: the user reacts sentence by sentence, so each one
 should make sense when quoted on its own.
