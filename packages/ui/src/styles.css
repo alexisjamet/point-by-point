@@ -21,7 +21,6 @@
   --pbp-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.035);
   --pbp-card-shadow-focus: 0 4px 20px rgba(0, 0, 0, 0.075);
   --pbp-send: #c6613f;
-  --pbp-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 13V3M3.5 7.5 8 3l4.5 4.5'/%3E%3C/svg%3E");
   --pbp-cross: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M4 4l8 8M12 4l-8 8'/%3E%3C/svg%3E");
   /* The host's font files are not loaded (no outbound calls), so its family names would not
      resolve: use the system interface font instead, SF Pro on macOS and iOS (its licence forbids
@@ -490,32 +489,23 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
-/* Send is Claude's: a clay square with an arrow. The label stays in the button for screen readers
-   and the tooltip, without taking room. */
+/* Send is Claude's clay button, and says what it sends: "Send 2 annotations". */
 button.primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 32px;
   height: 32px;
   min-height: 32px;
-  padding: 0;
+  padding: 0 14px;
   border: none;
   border-radius: 8px;
   background: var(--pbp-send);
   color: #fff;
-  font-size: 0;
-  overflow: hidden;
-}
-
-button.primary::before {
-  content: "";
-  width: 16px;
-  height: 16px;
-  background: currentColor;
-  -webkit-mask: var(--pbp-arrow) center / contain no-repeat;
-  mask: var(--pbp-arrow) center / contain no-repeat;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 button.primary:hover:not(:disabled) {
@@ -530,8 +520,8 @@ button:disabled {
 /* Touch screens: a finger needs a larger target. */
 @media (pointer: coarse) {
   button.primary {
-    width: 36px;
     height: 36px;
+    padding: 0 16px;
   }
 }
 
@@ -606,12 +596,15 @@ button.note-remove:hover {
   font-size: 12.5px;
 }
 
-/* In the sheet, the bar at the bottom of the screen keeps to the arrows, the counter and Send. */
+/* In the sheet, the bar at the bottom of the screen keeps to the arrows, on the left, and Send. */
 body.sheet .hint {
   display: none;
 }
 
-.count,
+body.sheet .note-nav {
+  margin-right: auto;
+}
+
 .status-group {
   white-space: nowrap;
 }
@@ -626,15 +619,10 @@ body.sheet .hint {
   display: none;
 }
 
-/* Narrow frames: the hint goes on its own line above the counter and the button, the status on its
-   own line under them. */
+/* Narrow frames: the hint goes on its own line above the button, the status on its own line under it. */
 @media (max-width: 480px) {
   .hint {
     flex-basis: 100%;
-  }
-
-  .count {
-    margin-right: auto;
   }
 
   .status-group {
@@ -642,16 +630,6 @@ body.sheet .hint {
     flex-basis: 100%;
     justify-content: flex-end;
   }
-}
-
-.count {
-  color: var(--pbp-muted);
-  font-size: 13px;
-}
-
-/* In the sheet, the counter sits next to the arrows. */
-body.sheet .count {
-  margin-right: auto;
 }
 
 .status {

@@ -33,7 +33,7 @@ test("annotates sentences by click and sends them in document order", async ({ p
 
   await frame.locator(".phrase", { hasText: "First we migrate the database." }).click();
   await page.keyboard.type("Back up first.");
-  await expect(frame.locator("#count")).toHaveText("2 annotations");
+  await expect(frame.locator("#send")).toHaveText("Send 2 annotations");
 
   await frame.locator("#send").click();
 
@@ -67,7 +67,7 @@ test("clicking an annotated sentence returns to its note without a duplicate", a
   const sentence = frame.locator(".phrase", { hasText: "Keep the old cluster" });
   await sentence.click();
   await page.keyboard.type("Why a week?");
-  await frame.locator("#count").click();
+  await frame.locator("#composer").click({ position: { x: 4, y: 4 } });
   await sentence.click();
   await expect(frame.locator(".note")).toHaveCount(1);
   await expect(frame.locator(".note textarea")).toBeFocused();
@@ -220,6 +220,11 @@ test("speaks French when the host does", async ({ page }) => {
   await expect(frame.locator(".note-remove")).toHaveText("Retirer");
   await expect(frame.locator(".note-remove")).toHaveAttribute("title", "Retirer");
   await expect(frame.locator(".note-done")).toHaveText("Valider");
+  await page.keyboard.type("Pourquoi ?");
+  await expect(frame.locator("#send")).toHaveText("Envoyer 1 annotation");
+  await frame.locator(".phrase", { hasText: "Keep the old cluster" }).click();
+  await page.keyboard.type("Combien ?");
+  await expect(frame.locator("#send")).toHaveText("Envoyer 2 annotations");
 });
 
 test("renders streamed input and enables annotation only at the end", async ({ page }) => {
@@ -293,7 +298,7 @@ test("restores the notes of the last send", async ({ page }) => {
 
   await frame.getByRole("button", { name: "Restore notes" }).click();
   await expect(frame.locator(".note textarea")).toHaveValue("Which dashboard?");
-  await expect(frame.locator("#count")).toHaveText("1 annotation");
+  await expect(frame.locator("#send")).toHaveText("Send 1 annotation");
   await expect(frame.getByRole("button", { name: "Restore notes" })).toBeHidden();
   await expect(frame.locator(".phrase", { hasText: "Watch the error rate." })).toHaveClass(/annotated/);
 });

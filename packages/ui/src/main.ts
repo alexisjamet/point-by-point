@@ -33,7 +33,6 @@ const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>
 const content = $<HTMLElement>("#content");
 const composer = $<HTMLElement>("#composer");
 const sendButton = $<HTMLButtonElement>("#send");
-const countLabel = $<HTMLElement>("#count");
 const previousNoteButton = $<HTMLButtonElement>("#previous-note");
 const nextNoteButton = $<HTMLButtonElement>("#next-note");
 const statusLabel = $<HTMLElement>("#status");
@@ -95,8 +94,6 @@ function isTouch(): boolean {
 
 function applyLabels() {
   document.documentElement.lang = lang;
-  sendButton.textContent = s.send;
-  sendButton.title = s.send;
   copyButton.textContent = s.copy;
   hintLabel.textContent = isTouch() ? s.hintTouch : s.hint;
   storageNotice.textContent = s.noStorage;
@@ -586,9 +583,12 @@ function filledCount(): number {
 
 function updateCount() {
   const count = filledCount();
-  countLabel.textContent = s.count(count);
-  // Send waits for a note with text; once there is one, the hint has done its job.
-  if (!sending) sendButton.disabled = count === 0;
+  // Send says how many notes it sends, and waits for one with text; once there is one, the hint has
+  // done its job.
+  if (!sending) {
+    sendButton.textContent = s.sendCount(count);
+    sendButton.disabled = count === 0;
+  }
   hintLabel.hidden = count > 0;
   updateNoteNav();
 }
@@ -745,8 +745,6 @@ async function send() {
     fallbackBox.hidden = false;
   } finally {
     sending = false;
-    sendButton.disabled = false;
-    sendButton.textContent = s.send;
     updateCount();
   }
 }
