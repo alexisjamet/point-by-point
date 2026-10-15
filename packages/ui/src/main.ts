@@ -71,6 +71,11 @@ function applyHostContext(context: McpUiHostContext | undefined, initial = false
   // Host font names are used through the variables, but host @font-face rules are not applied:
   // they would make the widget download fonts, and it makes no outbound calls.
   if (context.styles?.variables) applyHostStyleVariables(context.styles.variables);
+  if (context.safeAreaInsets) {
+    const root = document.documentElement.style;
+    root.setProperty("--pbp-safe-top", `${context.safeAreaInsets.top}px`);
+    root.setProperty("--pbp-safe-bottom", `${context.safeAreaInsets.bottom}px`);
+  }
   if (context.displayMode) setFullscreenClass(context.displayMode === "fullscreen");
   if (!context.locale && !initial) return;
   const nextLang = pickLang(context.locale ?? navigator.language);
@@ -379,9 +384,19 @@ function refreshHighlights() {
 
 // ---------- Mobile focus mode and fullscreen ----------
 
+// In fullscreen, the Claude iOS app lays a translucent title bar (about 100px with the status bar)
+// over the top of the frame without reporting it as a safe area: keep the note below it.
+const MOBILE_FULLSCREEN_HEADER = 100;
+
 function setFullscreenClass(on: boolean) {
   fullscreen = on;
   document.body.classList.toggle("fullscreen", on);
+  if (on) {
+    const context = app.getHostContext();
+    const reported = context?.safeAreaInsets?.top ?? 0;
+    const header = context?.platform === "mobile" || isTouch() ? MOBILE_FULLSCREEN_HEADER : 0;
+    document.documentElement.style.setProperty("--pbp-sheet-top", `${Math.max(reported, header) + 12}px`);
+  }
   if (!on && focusTarget && document.body.classList.contains("sheet")) leaveFocusMode({ fromHost: true });
 }
 
@@ -464,7 +479,14 @@ content.addEventListener("click", (event) => {
   if (sentence) annotateSentence(sentence);
 });
 
+/** True while the user types in a note or the remark: selections there belong to the field. */
+function editingText(): boolean {
+  const active = document.activeElement;
+  return !!active && (active.tagName === "TEXTAREA" || active.tagName === "INPUT");
+}
+
 function selectionInContent(): Range | null {
+  if (editingText()) return null;
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed || selection.rangeCount === 0) return null;
   const range = selection.getRangeAt(0);
@@ -476,8 +498,8 @@ function selectionInContent(): Range | null {
   return selection.toString().trim().length > 2 ? range : null;
 }
 
-content.addEventListener("mouseup", () => {
-  if (!ready || isTouch()) return;
+content.addEventListener("mouseup", (event) => {
+  if (!ready || isTouch() || (event.target as HTMLElement).closest(".note")) return;
   setTimeout(() => {
     const range = selectionInContent();
     if (range) annotateSelection(range);
@@ -489,6 +511,7 @@ let selectionTimer: ReturnType<typeof setTimeout> | undefined;
 document.addEventListener("selectionchange", () => {
   if (!ready || !isTouch()) return;
   clearTimeout(selectionTimer);
+  if (editingText()) return;
   selectionTimer = setTimeout(() => {
     const range = selectionInContent();
     if (range) annotateSelection(range);

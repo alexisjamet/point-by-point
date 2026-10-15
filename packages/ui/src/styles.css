@@ -472,7 +472,7 @@ body.focus-mode .note-quote {
 }
 
 body.sheet #app {
-  padding: max(12px, env(safe-area-inset-top)) 14px 12px;
+  padding: var(--pbp-sheet-top, 12px) 14px max(12px, var(--pbp-safe-bottom, 0px));
 }
 
 /* ---------- Diagnostic ---------- */

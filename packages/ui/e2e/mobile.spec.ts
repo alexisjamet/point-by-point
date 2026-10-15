@@ -41,3 +41,28 @@ test("asks for fullscreen when the host offers it, and returns inline on Done", 
   await expect(frame.locator("body")).not.toHaveClass(/sheet|focus-mode/);
   await expect.poll(async () => (await page.evaluate(() => window.recorded)).displayModes).toEqual(["fullscreen", "inline"]);
 });
+
+test("typing in a note is not mistaken for a passage selection", async ({ page }) => {
+  const frame = await mount(page);
+  await frame.locator(".phrase", { hasText: "Second point here." }).tap();
+  const field = frame.locator(".note textarea");
+  await field.tap();
+  await field.pressSequentially("hello world");
+  // iOS reports selections while typing (autocorrect, word selection): simulate one in the field.
+  await field.evaluate((element: HTMLTextAreaElement) => {
+    element.setSelectionRange(0, 5);
+    document.dispatchEvent(new Event("selectionchange"));
+  });
+  await page.waitForTimeout(1300);
+  await expect(frame.locator(".note")).toHaveCount(1);
+  await expect(field).toBeFocused();
+  await expect(field).toHaveValue("hello world");
+});
+
+test("the fullscreen sheet keeps the note below the host title bar", async ({ page }) => {
+  const frame = await mount(page, { allowFullscreen: true, context: { platform: "mobile" } });
+  await frame.locator(".phrase", { hasText: "First point here." }).tap();
+  await expect(frame.locator("body")).toHaveClass(/sheet/);
+  const top = await frame.locator(".note.active").evaluate((note) => note.getBoundingClientRect().top);
+  expect(top).toBeGreaterThanOrEqual(100);
+});
