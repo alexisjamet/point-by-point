@@ -221,7 +221,7 @@ test("speaks French when the host does", async ({ page }) => {
   await expect(frame.locator(".note-remove")).toHaveAttribute("title", "Retirer");
   await expect(frame.locator(".note-done")).toHaveText("Valider");
   await page.keyboard.type("Pourquoi ?");
-  await expect(frame.locator("#send")).toHaveText("Envoyer 1 annotation");
+  await expect(frame.locator("#send")).toHaveText("Envoyer");
   await frame.locator(".phrase", { hasText: "Keep the old cluster" }).click();
   await page.keyboard.type("Combien ?");
   await expect(frame.locator("#send")).toHaveText("Envoyer 2 annotations");
@@ -298,7 +298,7 @@ test("restores the notes of the last send", async ({ page }) => {
 
   await frame.getByRole("button", { name: "Restore notes" }).click();
   await expect(frame.locator(".note textarea")).toHaveValue("Which dashboard?");
-  await expect(frame.locator("#send")).toHaveText("Send 1 annotation");
+  await expect(frame.locator("#send")).toHaveText("Send");
   await expect(frame.getByRole("button", { name: "Restore notes" })).toBeHidden();
   await expect(frame.locator(".phrase", { hasText: "Watch the error rate." })).toHaveClass(/annotated/);
 });
