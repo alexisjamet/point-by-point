@@ -529,6 +529,21 @@ body.sheet:not(.focus-mode) .send-row {
   border-top: 1px solid var(--pbp-border);
 }
 
+.note-nav {
+  display: none;
+}
+
+body.sheet:not(.focus-mode) .note-nav {
+  display: inline-flex;
+  gap: 6px;
+}
+
+button.nav-button {
+  min-width: 40px;
+  padding: 5px 0;
+  font-size: 16px;
+}
+
 body.sheet:not(.focus-mode) #app {
   padding-bottom: calc(var(--pbp-sheet-bottom, 0px) + 96px);
 }

@@ -35,6 +35,8 @@ const composer = $<HTMLElement>("#composer");
 const remarkField = $<HTMLTextAreaElement>("#remark");
 const sendButton = $<HTMLButtonElement>("#send");
 const countLabel = $<HTMLElement>("#count");
+const previousNoteButton = $<HTMLButtonElement>("#previous-note");
+const nextNoteButton = $<HTMLButtonElement>("#next-note");
 const statusLabel = $<HTMLElement>("#status");
 const restoreButton = $<HTMLButtonElement>("#restore");
 const errorBox = $<HTMLElement>("#error");
@@ -103,6 +105,10 @@ function applyLabels() {
   if (!statusLabel.hidden) statusLabel.textContent = s.sent;
   restoreButton.textContent = s.restore;
   $<HTMLButtonElement>("#collapse").textContent = s.collapse;
+  previousNoteButton.setAttribute("aria-label", s.previousNote);
+  previousNoteButton.title = s.previousNote;
+  nextNoteButton.setAttribute("aria-label", s.nextNote);
+  nextNoteButton.title = s.nextNote;
   for (const sentence of sentences) labelSentence(sentence);
   for (const annotation of annotations.values()) labelNote(annotation);
   updateCount();
@@ -444,7 +450,11 @@ function leaveFocusMode(options: { restoreFocus?: boolean } = {}) {
   document.body.classList.remove("focus-mode");
   (document.activeElement as HTMLElement | null)?.blur();
   const block = inSheet() ? "center" : "nearest";
-  requestAnimationFrame(() => target.scrollIntoView({ block }));
+  if (target.classList.contains("note")) noteAnchor = target;
+  requestAnimationFrame(() => {
+    target.scrollIntoView({ block });
+    updateNoteNav();
+  });
   if (options.restoreFocus !== false && !isTouch()) target.querySelector("textarea")?.focus();
 }
 
@@ -569,7 +579,58 @@ function filledCount(): number {
 
 function updateCount() {
   countLabel.textContent = s.count(filledCount());
+  updateNoteNav();
 }
+
+// ---------- Note navigation (fullscreen sheet) ----------
+
+// The note last reached (by the arrows or by Done). Near the end of the response a note cannot be
+// scrolled to the middle, so while it is on screen, the arrows go from it rather than from the middle.
+let noteAnchor: HTMLElement | null = null;
+
+function onScreen(element: HTMLElement): boolean {
+  const rect = element.getBoundingClientRect();
+  return rect.bottom > 0 && rect.top < window.innerHeight;
+}
+
+/** The note before or after the current one, in document order. */
+function adjacentNote(direction: "previous" | "next"): HTMLElement | undefined {
+  const notes = Array.from(content.querySelectorAll<HTMLElement>(".note"));
+  const anchor = noteAnchor ? notes.indexOf(noteAnchor) : -1;
+  if (anchor >= 0 && onScreen(notes[anchor]!)) return notes[direction === "next" ? anchor + 1 : anchor - 1];
+  const middle = window.innerHeight / 2;
+  if (direction === "next") return notes.find((note) => note.getBoundingClientRect().top > middle + 1);
+  return notes.findLast((note) => note.getBoundingClientRect().bottom < middle - 1);
+}
+
+function updateNoteNav() {
+  previousNoteButton.disabled = !adjacentNote("previous");
+  nextNoteButton.disabled = !adjacentNote("next");
+}
+
+function goToNote(direction: "previous" | "next") {
+  const note = adjacentNote(direction);
+  if (!note) return;
+  noteAnchor = note;
+  note.scrollIntoView({ block: "center" });
+  updateNoteNav();
+}
+
+previousNoteButton.addEventListener("click", () => goToNote("previous"));
+nextNoteButton.addEventListener("click", () => goToNote("next"));
+
+let navFrame = 0;
+window.addEventListener(
+  "scroll",
+  () => {
+    if (!inSheet() || navFrame) return;
+    navFrame = requestAnimationFrame(() => {
+      navFrame = 0;
+      updateNoteNav();
+    });
+  },
+  { passive: true },
+);
 
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 function scheduleSave() {

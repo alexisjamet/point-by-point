@@ -73,6 +73,27 @@ test("between notes in the sheet, Send stays on screen in a long response", asyn
   await expect(frame.locator(".phrase", { hasText: "Paragraph 1 has a sentence." })).not.toBeInViewport();
 });
 
+test("in the sheet, the arrows go from note to note", async ({ page }) => {
+  const markdown = Array.from({ length: 40 }, (_, i) => `Paragraph ${i + 1} has a sentence.`).join("\n\n");
+  const frame = await mount(page, { allowFullscreen: true, args: { markdown } });
+  const note = (n: number) => frame.locator(".note", { hasText: `Paragraph ${n} has a sentence.` });
+  for (const n of [5, 20, 39]) {
+    await frame.locator(".phrase", { hasText: `Paragraph ${n} has a sentence.` }).tap();
+    await frame.locator(".note.active .note-done").tap();
+  }
+  // Done on the last note leaves it in view: nothing after it.
+  await expect(frame.locator("#next-note")).toBeDisabled();
+  await frame.locator("#previous-note").tap();
+  await expect(note(20)).toBeInViewport();
+  await frame.locator("#previous-note").tap();
+  await expect(note(5)).toBeInViewport();
+  await expect(frame.locator("#previous-note")).toBeDisabled();
+  await frame.locator("#next-note").tap();
+  await frame.locator("#next-note").tap();
+  await expect(note(39)).toBeInViewport();
+  await expect(frame.locator("#next-note")).toBeDisabled();
+});
+
 test("sending from the fullscreen sheet returns inline", async ({ page }) => {
   const frame = await mount(page, { allowFullscreen: true });
   await frame.locator(".phrase", { hasText: "First point here." }).tap();
