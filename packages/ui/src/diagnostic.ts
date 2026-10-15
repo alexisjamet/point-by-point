@@ -24,6 +24,10 @@ export function renderDiagnostic(
   title.textContent = s.diagnosticTitle;
   const output = document.createElement("pre");
   output.className = "diagnostic-output";
+  // One line updated in place: appending a log line per resize would grow the page, make the host
+  // grow the frame, fire another resize, and loop.
+  const viewportLine = document.createElement("p");
+  viewportLine.className = "diagnostic-viewport";
   const field = document.createElement("textarea");
   field.rows = 2;
   field.placeholder = "Keyboard test / test du clavier";
@@ -40,7 +44,19 @@ export function renderDiagnostic(
   report.className = "primary";
   report.textContent = s.send;
   actions.append(request, back, report);
-  root.replaceChildren(title, output, field, actions);
+  root.replaceChildren(title, output, viewportLine, field, actions);
+
+  const viewportStats = { resizes: 0, minHeight: Infinity, maxHeight: 0 };
+  const showViewport = () => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const height = Math.round(viewport.height);
+    viewportStats.minHeight = Math.min(viewportStats.minHeight, height);
+    viewportStats.maxHeight = Math.max(viewportStats.maxHeight, height);
+    viewportLine.textContent =
+      `visualViewport ${Math.round(viewport.width)}×${height}px · ` +
+      `min ${viewportStats.minHeight}px · max ${viewportStats.maxHeight}px · ${viewportStats.resizes} resizes`;
+  };
 
   const snapshot = () => {
     const context = app.getHostContext();
@@ -66,6 +82,7 @@ export function renderDiagnostic(
       broadcastChannel: typeof BroadcastChannel !== "undefined",
       clipboard: typeof navigator.clipboard?.writeText === "function",
       cssHighlights: typeof CSS !== "undefined" && "highlights" in CSS,
+      viewportStats,
     };
   };
 
@@ -91,8 +108,26 @@ export function renderDiagnostic(
   back.addEventListener("click", () => void requestMode("inline"));
   field.addEventListener("focus", () => note("field focus"));
   field.addEventListener("blur", () => note("field blur"));
-  window.visualViewport?.addEventListener("resize", () => note(`visualViewport ${Math.round(window.visualViewport!.height)}px`));
-  app.addEventListener("hostcontextchanged", (params) => note(`hostcontextchanged ${JSON.stringify(params)}`));
+  let viewportFrame = 0;
+  window.visualViewport?.addEventListener("resize", () => {
+    viewportStats.resizes++;
+    cancelAnimationFrame(viewportFrame);
+    viewportFrame = requestAnimationFrame(showViewport);
+  });
+  // A summary only: the full context carries every style variable and the tool definition.
+  app.addEventListener("hostcontextchanged", (params) =>
+    note(
+      `hostcontextchanged ${JSON.stringify({
+        keys: Object.keys(params),
+        toolCallId: params.toolInfo?.id,
+        displayMode: params.displayMode,
+        availableDisplayModes: params.availableDisplayModes,
+        theme: params.theme,
+        locale: params.locale,
+        containerDimensions: params.containerDimensions,
+      })}`,
+    ),
+  );
   report.addEventListener("click", () => {
     const text = `Point-by-point diagnostic\n\n\`\`\`json\n${output.textContent}\n\`\`\``;
     void app
@@ -101,4 +136,5 @@ export function renderDiagnostic(
       .catch((error) => note(`sendMessage error: ${String(error)}`));
   });
   show();
+  showViewport();
 }

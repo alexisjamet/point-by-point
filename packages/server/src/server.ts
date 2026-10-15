@@ -4,11 +4,17 @@ import {
   registerAppResource,
   registerAppTool,
 } from "@modelcontextprotocol/ext-apps/server";
-import { CLIENT_CAPABILITIES_META_KEY, McpServer, type ClientCapabilities } from "@modelcontextprotocol/server";
+import {
+  CLIENT_CAPABILITIES_META_KEY,
+  McpServer,
+  ResourceTemplate,
+  type ClientCapabilities,
+} from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { UI_HTML, UI_URI, VERSION } from "./ui.generated";
 
 export const TOOL_NAME = "annotate_response";
+export const UI_URI_TEMPLATE = "ui://point-by-point/annotate-v{version}.html";
 export const MAX_MARKDOWN_LENGTH = 100_000;
 
 export const TOOL_DESCRIPTION =
@@ -80,6 +86,24 @@ export function createServer(options: { ui: boolean }): McpServer {
     async () => ({
       contents: [
         { uri: UI_URI, mimeType: RESOURCE_MIME_TYPE, text: UI_HTML, _meta: { ui: { prefersBorder: false } } },
+      ],
+    }),
+  );
+
+  // Widgets already in conversations point at the URI of the release they were made with. Each
+  // release changes the URI so no host serves a stale cached interface, and earlier URIs keep
+  // loading, with the current interface.
+  server.registerResource(
+    "Annotation interface, earlier releases",
+    new ResourceTemplate(UI_URI_TEMPLATE, { list: undefined }),
+    {
+      description: "The annotation interface, for widgets created by earlier releases.",
+      mimeType: RESOURCE_MIME_TYPE,
+      _meta: { ui: { prefersBorder: false } },
+    },
+    async (uri) => ({
+      contents: [
+        { uri: uri.href, mimeType: RESOURCE_MIME_TYPE, text: UI_HTML, _meta: { ui: { prefersBorder: false } } },
       ],
     }),
   );

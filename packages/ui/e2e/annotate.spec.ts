@@ -210,3 +210,19 @@ test("keeps the copy fallback hidden until a send fails", async ({ page }) => {
   await expect(frame.locator("#error")).toBeHidden();
   await expect(frame.locator("#storage-notice")).toBeHidden();
 });
+
+for (const [name, markdown] of [
+  ["a response", MARKDOWN],
+  ["the diagnostic", "/point-by-point-diagnostic"],
+] as const) {
+  test(`the frame height settles for ${name}`, async ({ page }) => {
+    await page.goto("/");
+    await page.evaluate((md) => window.mount({ args: { markdown: md } }), markdown);
+    const height = () => page.locator("iframe").first().evaluate((frame) => frame.getBoundingClientRect().height);
+    await page.waitForTimeout(600);
+    const settled = await height();
+    await page.waitForTimeout(1200);
+    expect(await height()).toBe(settled);
+    expect(settled).toBeLessThan(2000);
+  });
+}

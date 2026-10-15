@@ -164,6 +164,8 @@ Bump `version` in `package.json`, `plugin/.claude-plugin/plugin.json` and
 `.claude-plugin/marketplace.json`, then push a `v<version>` tag. The release workflow runs every
 check, builds the interface under its versioned URI (a new URI per release, so no host serves a
 stale cached interface), deploys the Worker and attaches the skill archive to the GitHub release.
+The URIs of earlier releases keep being served, with the current interface, so widgets already in
+conversations keep loading.
 Deploying needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets;
 without them the release is still published, the deploy step is skipped with a warning, and the
 Worker is deployed by hand with `pnpm run deploy`.

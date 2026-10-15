@@ -1,6 +1,8 @@
 {
   "name": "point-by-point",
-  "owner": { "name": "Alexis Jamet" },
+  "owner": {
+    "name": "Alexis Jamet"
+  },
   "metadata": {
     "description": "Annotate any sentence of Claude's responses and reply point by point."
   },
@@ -9,9 +11,13 @@
       "name": "point-by-point",
       "source": "./plugin",
       "description": "Annotate any sentence of Claude's responses and reply point by point in a single message.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "license": "MIT",
-      "keywords": ["annotation", "mcp-app", "reply"]
+      "keywords": [
+        "annotation",
+        "mcp-app",
+        "reply"
+      ]
     }
   ]
 }

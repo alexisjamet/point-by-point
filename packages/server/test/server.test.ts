@@ -48,6 +48,16 @@ describe.each<Era>(["legacy", "modern"])("%s protocol", (era) => {
     await client.close();
   });
 
+  it("keeps serving the interface under the URIs of earlier releases", async () => {
+    const client = await connect({ ui: true, era });
+    const earlier = "ui://point-by-point/annotate-v0.0.html";
+    const { contents } = await client.readResource({ uri: earlier });
+    expect(contents[0]).toMatchObject({ uri: earlier, mimeType: "text/html;profile=mcp-app" });
+    expect((contents[0] as { text: string }).text).toContain("<html");
+    await expect(client.readResource({ uri: "ui://point-by-point/other.html" })).rejects.toThrow();
+    await client.close();
+  });
+
   it("returns a short result with a creation time", async () => {
     const client = await connect({ ui: true, era });
     const result = await client.callTool({ name: TOOL_NAME, arguments: { markdown: "Hello. World." } });

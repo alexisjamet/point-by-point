@@ -126,7 +126,7 @@ function renderPartial(text: string) {
   });
 }
 
-function renderFinal(text: string, toolCallId: string | number | undefined) {
+function renderFinal(text: string) {
   if (ready && text === markdown) return;
   markdown = text;
   pendingPartial = null;
@@ -151,7 +151,9 @@ function renderFinal(text: string, toolCallId: string | number | undefined) {
     sentence.focusSpan.setAttribute("role", "button");
     labelSentence(sentence);
   }
-  draftKey = `${toolCallId ?? ""}:${hashText(text)}`;
+  // Keyed by the response text: hosts may send the tool call id only after the input, so a key
+  // built from it could differ between the first load and a reload.
+  draftKey = hashText(text);
   ready = true;
   composer.hidden = false;
   storageNotice.hidden = store.durable;
@@ -643,7 +645,7 @@ app.addEventListener("toolinputpartial", (params) => {
 app.addEventListener("toolinput", (params) => {
   const text = fullMarkdown(params.arguments);
   if (text === null) return;
-  renderFinal(text, app.getHostContext()?.toolInfo?.id);
+  renderFinal(text);
   startRecencyWatch();
 });
 
@@ -653,7 +655,7 @@ let watchingRecency = false;
 function startRecencyWatch() {
   if (watchingRecency || createdAt === null || !draftKey) return;
   watchingRecency = true;
-  watchRecency(draftKey, createdAt, () => {
+  watchRecency(`${draftKey}:${createdAt}`, createdAt, () => {
     previous = true;
   });
 }
