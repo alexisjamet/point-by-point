@@ -36,7 +36,7 @@ const fr: Strings = {
   notePlaceholder: "Ta réponse ou ta question",
   noteLabel: (quote) => `Annotation sur : ${quote}`,
   remove: "Retirer",
-  done: "Terminé",
+  done: "Valider",
   collapse: "Revenir à la conversation",
   previousNote: "Note précédente",
   nextNote: "Note suivante",

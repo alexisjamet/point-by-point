@@ -22,6 +22,7 @@
   --pbp-card-shadow-focus: 0 4px 20px rgba(0, 0, 0, 0.075);
   --pbp-send: #c6613f;
   --pbp-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 13V3M3.5 7.5 8 3l4.5 4.5'/%3E%3C/svg%3E");
+  --pbp-cross: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M4 4l8 8M12 4l-8 8'/%3E%3C/svg%3E");
   /* The host's font files are not loaded (no outbound calls), so its family names would not
      resolve: use the system interface font instead, SF Pro on macOS and iOS (its licence forbids
      embedding it), Segoe UI on Windows, Roboto on Android. */
@@ -404,11 +405,12 @@ li > .note-slot {
 /* The note is the field, drawn like Claude's composer: the textarea inside has no frame of its own,
    and the card's hairline and shadow deepen while the user writes in it. */
 .note {
+  position: relative;
   border: 0.5px solid var(--pbp-line);
   border-radius: 16px;
   background: var(--pbp-field);
   box-shadow: var(--pbp-card-shadow);
-  padding: 12px 14px 8px 16px;
+  padding: 12px 14px 12px 16px;
   font-size: 14px;
   line-height: 1.4;
   cursor: text;
@@ -457,11 +459,12 @@ textarea::placeholder {
   opacity: 1;
 }
 
+/* Only the focus mode has an action at the foot of the note (Done); elsewhere the foot is empty. */
 .note-actions {
-  display: flex;
+  display: none;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 8px;
   cursor: default;
 }
 
@@ -532,20 +535,51 @@ button:disabled {
   }
 }
 
-.note-done {
-  display: none;
+/* Remove is a cross in the note's top right corner, quiet until pointed at: the note is about what
+   the user writes. The label stays in the button for screen readers and the tooltip. */
+button.note-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  color: var(--pbp-faint);
+  font-size: 0;
+  overflow: hidden;
 }
 
-/* Remove stays quiet until pointed at: the note is about what the user writes. */
-button.note-remove {
-  border-color: transparent;
-  color: var(--pbp-faint);
-  font-weight: 400;
-  margin-right: -8px;
+button.note-remove::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  -webkit-mask: var(--pbp-cross) center / contain no-repeat;
+  mask: var(--pbp-cross) center / contain no-repeat;
 }
 
 button.note-remove:hover {
   color: var(--pbp-danger);
+}
+
+@media (pointer: coarse) {
+  button.note-remove {
+    top: 2px;
+    right: 2px;
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* The quote keeps clear of the cross. */
+.note-quote {
+  margin-right: 22px;
 }
 
 /* ---------- Composer ---------- */
@@ -687,9 +721,21 @@ body.focus-mode .note-slot {
   margin: 0;
 }
 
-body.focus-mode .note.active .note-done {
-  display: inline-flex;
-  align-items: center;
+body.focus-mode .note.active .note-actions {
+  display: flex;
+}
+
+/* Done validates the note: the filled clay button, like Send. */
+button.note-done {
+  min-height: 36px;
+  padding: 6px 16px;
+  border: none;
+  background: var(--pbp-send);
+  color: #fff;
+}
+
+button.note-done:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--pbp-send) 88%, #000);
 }
 
 body.focus-mode .composer {

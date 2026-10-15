@@ -228,8 +228,9 @@ function createAnnotation(draft: DraftAnnotation, options: { focus: boolean }): 
   const remove = document.createElement("button");
   remove.type = "button";
   remove.className = "note-remove";
-  actions.append(done, remove);
-  note.append(quote, textarea, actions);
+  actions.append(done);
+  // Remove sits in the top right corner (CSS), after the field in the tab order.
+  note.append(quote, textarea, remove, actions);
 
   const annotation: Annotation = {
     ...draft,
@@ -278,7 +279,9 @@ function labelNote(annotation: Annotation) {
   annotation.textarea.placeholder = s.notePlaceholder;
   annotation.textarea.setAttribute("aria-label", s.notePlaceholder);
   annotation.note.querySelector(".note-done")!.textContent = s.done;
-  annotation.note.querySelector(".note-remove")!.textContent = s.remove;
+  const remove = annotation.note.querySelector<HTMLButtonElement>(".note-remove")!;
+  remove.textContent = s.remove;
+  remove.title = s.remove;
 }
 
 /** Brings a note into view: focus on desktop; on touch, no focus so the keyboard stays closed. */
