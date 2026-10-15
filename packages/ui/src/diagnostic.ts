@@ -129,12 +129,15 @@ export function renderDiagnostic(
     ),
   );
   report.addEventListener("click", () => {
+    // A fresh snapshot: the one on screen dates from the last log line.
+    showViewport();
+    show();
     const text = `Point-by-point diagnostic\n\n\`\`\`json\n${output.textContent}\n\`\`\``;
     void app
       .sendMessage({ role: "user", content: [{ type: "text", text }] })
       .then((result) => note(`sendMessage → ${JSON.stringify(result)}`))
       .catch((error) => note(`sendMessage error: ${String(error)}`));
   });
-  show();
   showViewport();
+  show();
 }

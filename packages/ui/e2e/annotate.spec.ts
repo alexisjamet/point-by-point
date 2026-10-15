@@ -226,3 +226,17 @@ for (const [name, markdown] of [
     expect(settled).toBeLessThan(2000);
   });
 }
+
+test("the diagnostic sends a fresh report", async ({ page }) => {
+  await page.goto("/");
+  await page.evaluate(() => window.mount({ args: { markdown: "/point-by-point-diagnostic" }, allowFullscreen: true }));
+  const frame = page.frameLocator("iframe").first();
+  await frame.getByRole("button", { name: "Request fullscreen" }).click();
+  await expect(frame.locator(".diagnostic-output")).toContainText('"mode":"fullscreen"');
+  await frame.getByRole("button", { name: "Send" }).click();
+  await expect.poll(async () => (await page.evaluate(() => window.recorded)).messages.length).toBe(1);
+  const [report] = (await page.evaluate(() => window.recorded)).messages;
+  expect(report).toMatch(/^Point-by-point diagnostic\n\n```json\n/);
+  expect(report).toMatch(/"minHeight": \d+/);
+  expect(report).toContain('"availableDisplayModes": [\n    "inline",\n    "fullscreen"\n  ]');
+});
