@@ -14,6 +14,15 @@
   /* Derived from the theme colours above, so they follow light and dark on their own. */
   --pbp-rule: color-mix(in srgb, var(--pbp-border) 70%, transparent);
   --pbp-row-hover: color-mix(in srgb, var(--pbp-text) 3.5%, transparent);
+  /* Fields and buttons take their look from Claude's own composer: hairlines drawn from the text
+     colour (the host's border colour is too heavy for them), a soft shadow, and the clay Send. */
+  --pbp-line: color-mix(in srgb, var(--pbp-text) 13%, transparent);
+  --pbp-line-strong: color-mix(in srgb, var(--pbp-text) 26%, transparent);
+  --pbp-press: color-mix(in srgb, var(--pbp-text) 6%, transparent);
+  --pbp-card-shadow: 0 4px 20px rgba(0, 0, 0, 0.035);
+  --pbp-card-shadow-focus: 0 4px 20px rgba(0, 0, 0, 0.075);
+  --pbp-send: #c6613f;
+  --pbp-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 13V3M3.5 7.5 8 3l4.5 4.5'/%3E%3C/svg%3E");
   /* The host's font files are not loaded (no outbound calls), so its family names would not
      resolve: use the system interface font instead, SF Pro on macOS and iOS (its licence forbids
      embedding it), Segoe UI on Windows, Roboto on Android. */
@@ -35,6 +44,7 @@
     --pbp-mark: rgba(242, 196, 64, 0.24);
     --pbp-hover: rgba(122, 167, 255, 0.12);
     --pbp-danger: var(--color-text-danger, #f2a49d);
+    --pbp-send: #d97757;
     --pbp-marker: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%23ffd400' fill-opacity='.34' d='M2.5,4.2 C10,2.4 19,5.1 30,3.6 C44,1.9 58,4.8 73,3.1 C84,1.9 92,3.6 98,2.6 C99.6,6.2 99.1,11.4 98.4,16.3 C90,17.9 78,15.4 65,17.2 C50,19.1 36,15.9 21,17.6 C12,18.6 6,16.3 1.6,17.1 C.4,13 .9,8 2.5,4.2 Z'/%3E%3Cpath fill='%23ffd400' fill-opacity='.2' d='M4,7 C20,5.5 40,8.5 60,6.5 C75,5.3 88,7.4 96,6 C96.5,9 96.2,12 95.8,14 C80,15.5 62,12.8 45,14.6 C28,16.3 14,13.6 3.5,14.4 C3,12 3.2,9.5 4,7 Z'/%3E%3C/svg%3E");
   }
 }
@@ -50,6 +60,7 @@
   --pbp-mark: rgba(242, 196, 64, 0.24);
   --pbp-hover: rgba(122, 167, 255, 0.12);
   --pbp-danger: var(--color-text-danger, #f2a49d);
+  --pbp-send: #d97757;
   --pbp-marker: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%23ffd400' fill-opacity='.34' d='M2.5,4.2 C10,2.4 19,5.1 30,3.6 C44,1.9 58,4.8 73,3.1 C84,1.9 92,3.6 98,2.6 C99.6,6.2 99.1,11.4 98.4,16.3 C90,17.9 78,15.4 65,17.2 C50,19.1 36,15.9 21,17.6 C12,18.6 6,16.3 1.6,17.1 C.4,13 .9,8 2.5,4.2 Z'/%3E%3Cpath fill='%23ffd400' fill-opacity='.2' d='M4,7 C20,5.5 40,8.5 60,6.5 C75,5.3 88,7.4 96,6 C96.5,9 96.2,12 95.8,14 C80,15.5 62,12.8 45,14.6 C28,16.3 14,13.6 3.5,14.4 C3,12 3.2,9.5 4,7 Z'/%3E%3C/svg%3E");
 }
 
@@ -77,7 +88,8 @@ body {
 #app {
   max-width: 800px;
   margin: 0 auto;
-  padding: 4px 2px 8px;
+  /* The host fades the bottom of the frame into its own reply field: keep Send clear of it. */
+  padding: 4px 2px 24px;
 }
 
 /* Phones: the mobile apps give the frame the full screen width, so keep the text off the edges
@@ -153,11 +165,11 @@ body {
 /* Claude opens its answer to each of the user's points with a blockquote of the point: it looks
    like the note the user wrote, so the thread reads at a glance. */
 .response blockquote {
-  border: 1px solid var(--pbp-border);
-  border-left: 3px solid var(--pbp-accent);
-  border-radius: var(--pbp-radius);
-  background: var(--pbp-surface);
-  padding: 8px 10px;
+  border: 0.5px solid var(--pbp-line);
+  border-radius: 16px;
+  background: var(--pbp-field);
+  box-shadow: var(--pbp-card-shadow);
+  padding: 12px 16px;
   margin-top: 1.1em;
   font-size: 14px;
   line-height: 1.4;
@@ -173,6 +185,12 @@ body {
 
 .response blockquote em {
   color: var(--pbp-muted);
+}
+
+/* The user's point, quoted at the top of the answer, sits behind the same bar as in the note. */
+.response blockquote > p:first-child:has(> em:only-child) {
+  border-left: 2px solid var(--pbp-line-strong);
+  padding-left: 10px;
 }
 
 .response code {
@@ -394,42 +412,46 @@ li > .note-slot {
   margin: 6px 0;
 }
 
-/* The note and the general remark are the field: the textarea inside has no frame of its own, and
-   the card lights up while the user writes in it. */
+/* The note and the general remark are the field, drawn like Claude's composer: the textarea inside
+   has no frame of its own, and the card's hairline and shadow deepen while the user writes in it. */
 .note,
 .remark {
-  border: 1px solid var(--pbp-border);
-  border-radius: 12px;
+  border: 0.5px solid var(--pbp-line);
+  background: var(--pbp-field);
+  box-shadow: var(--pbp-card-shadow);
   font-size: 14px;
   line-height: 1.4;
+  cursor: text;
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .note {
-  border-left: 3px solid var(--pbp-accent);
-  background: var(--pbp-surface);
-  padding: 10px 12px;
+  border-radius: 16px;
+  padding: 12px 14px 8px 16px;
 }
 
 .remark {
-  background: var(--pbp-field);
-  padding: 12px 14px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  cursor: text;
+  border-radius: 20px;
+  padding: 14px 12px 10px 16px;
 }
 
 .note:focus-within,
-.remark:focus-within {
-  border-color: var(--pbp-accent);
-  box-shadow: 0 0 0 3px var(--pbp-hover);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pbp-accent) 18%, transparent);
+.remark:focus-within,
+.note:hover,
+.remark:hover {
+  border-color: var(--pbp-line-strong);
+  box-shadow: var(--pbp-card-shadow-focus);
 }
 
 .note-quote {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
+  padding-left: 10px;
+  border-left: 2px solid var(--pbp-line-strong);
   color: var(--pbp-muted);
-  font-size: 12.5px;
+  font-size: 13px;
+  line-height: 1.45;
   font-style: italic;
+  cursor: default;
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -445,7 +467,6 @@ textarea {
   font-size: 16px; /* 16px minimum: iOS does not zoom on focus */
   line-height: 1.45;
   color: var(--pbp-text);
-  caret-color: var(--pbp-accent);
   background: transparent;
   border: none;
   border-radius: 0;
@@ -462,45 +483,75 @@ textarea::placeholder {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 8px;
+  margin-top: 6px;
+  cursor: default;
 }
 
 button {
   font: inherit;
   font-size: 13px;
+  font-weight: 500;
   color: var(--pbp-text);
   background: transparent;
-  border: 1px solid var(--pbp-border);
-  border-radius: 6px;
-  padding: 5px 10px;
+  border: 0.5px solid var(--pbp-line-strong);
+  border-radius: 8px;
+  padding: 5px 12px;
   cursor: pointer;
   min-height: 32px;
 }
 
-button:hover {
-  background: var(--pbp-hover);
+button:hover:not(:disabled) {
+  background: var(--pbp-press);
 }
 
 button:focus-visible {
-  outline: 2px solid var(--pbp-accent);
-  outline-offset: 1px;
+  outline: 2px solid var(--pbp-line-strong);
+  outline-offset: 2px;
 }
 
+/* Send is Claude's: a clay square with an arrow. The label stays in the button for screen readers
+   and the tooltip, without taking room. */
 button.primary {
-  background: var(--pbp-text);
-  color: var(--pbp-field);
-  border-color: var(--pbp-text);
-  font-weight: 600;
-  padding: 6px 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--pbp-send);
+  color: #fff;
+  font-size: 0;
+  overflow: hidden;
 }
 
-button.primary:hover {
-  opacity: 0.88;
+button.primary::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  -webkit-mask: var(--pbp-arrow) center / contain no-repeat;
+  mask: var(--pbp-arrow) center / contain no-repeat;
+}
+
+button.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--pbp-send) 88%, #000);
 }
 
 button:disabled {
-  opacity: 0.55;
+  opacity: 0.5;
   cursor: default;
+}
+
+/* Touch screens: a finger needs a larger target. */
+@media (pointer: coarse) {
+  button.primary {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 .note-done {
@@ -511,21 +562,20 @@ button:disabled {
 button.note-remove {
   border-color: transparent;
   color: var(--pbp-faint);
-  margin-right: -6px;
-  margin-bottom: -4px;
+  font-weight: 400;
+  margin-right: -8px;
 }
 
 button.note-remove:hover {
   color: var(--pbp-danger);
-  background: var(--pbp-hover);
 }
 
 /* ---------- Composer ---------- */
 
 .composer {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--pbp-border);
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 0.5px solid var(--pbp-line-strong);
   font-size: 14px;
 }
 
@@ -539,6 +589,7 @@ button.note-remove:hover {
   display: none;
 }
 
+/* The foot of the remark card, as in Claude's composer: the counter on the left, Send on the right. */
 .send-row {
   display: flex;
   flex-wrap: wrap;
@@ -546,6 +597,7 @@ button.note-remove:hover {
   justify-content: flex-end;
   gap: 6px 10px;
   margin-top: 10px;
+  cursor: default;
 }
 
 .count,
@@ -616,9 +668,9 @@ button.link-button {
   font-family: var(--pbp-mono);
   color: var(--pbp-muted);
   background: var(--pbp-surface);
-  border: 1px solid var(--pbp-border);
-  border-radius: 12px;
-  padding: 10px 12px;
+  border: 0.5px solid var(--pbp-line);
+  border-radius: 16px;
+  padding: 12px 14px;
 }
 
 .storage-notice {
@@ -699,7 +751,7 @@ body.sheet:not(.focus-mode) .send-row {
   margin: 0;
   padding: 10px 14px calc(var(--pbp-sheet-bottom, 0px) + 10px);
   background: var(--pbp-field);
-  border-top: 1px solid var(--pbp-border);
+  border-top: 0.5px solid var(--pbp-line-strong);
 }
 
 .note-nav {
@@ -807,7 +859,7 @@ body.sheet:not(.focus-mode) #app {
 }
 
 @keyframes pbp-arrive {
-  0%, 30% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--pbp-accent) 28%, transparent); }
+  0%, 30% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--pbp-send) 28%, transparent); }
   100% { box-shadow: 0 0 0 4px transparent; }
 }
 
