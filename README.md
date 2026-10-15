@@ -4,13 +4,32 @@ Reply to Claude **point by point**. Claude shows its response in a read-only int
 sentence (or select any passage), write your reply or question under it, and send everything back
 in a single message.
 
+**1. Click a sentence or select a passage, and write under it.** Add a general remark if you like.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/annotate-dark.png">
+  <img src="docs/images/annotate-light.png" width="720" alt="A response from Claude in the point-by-point interface: one sentence and one passage are highlighted, each with a note written under it, and a general remark above the Send button.">
+</picture>
+
+**2. Send.** Your notes reach Claude as one message, in the order of the response:
+
 ```
 `First we migrate the database.` Back it up first.
 
-`switch traffic` When exactly?
+`switch traffic` When exactly? Not during business hours.
 
 Looks good overall.
 ```
+
+**3. Claude answers each point**, under a quote of your note, in a new interface you can annotate
+again.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/answer-dark.png">
+  <img src="docs/images/answer-light.png" width="720" alt="Claude's next response: each of the user's notes is shown as a bubble, followed by Claude's answer to it.">
+</picture>
+
+The interface follows Claude's light or dark theme (the images above follow yours).
 
 It is an [MCP App](https://claude.com/blog/interactive-tools-in-claude): an MCP server that declares
 one tool, `annotate_response`, whose interface is rendered inline in the conversation by hosts that
@@ -176,6 +195,7 @@ pnpm build        # interface → packages/ui/dist/index.html, embedded into the
 pnpm test         # unit tests (segmentation, message format, drafts, server guards)
 pnpm e2e          # Playwright: the built interface in a test host (desktop and mobile)
 pnpm dev          # wrangler dev on http://localhost:8787/mcp
+pnpm --filter @point-by-point/ui shots   # after a build: the README screenshots, light and dark
 ```
 
 The server answers both MCP protocol eras without keeping state: 2026-07-28 requests carry the
