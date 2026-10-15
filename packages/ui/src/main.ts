@@ -613,8 +613,15 @@ function goToNote(direction: "previous" | "next") {
   if (!note) return;
   noteAnchor = note;
   note.scrollIntoView({ block: "center" });
+  note.classList.remove("arrived");
+  void note.offsetWidth; // restart the glow when the same note is reached again
+  note.classList.add("arrived");
   updateNoteNav();
 }
+
+content.addEventListener("animationend", (event) => {
+  if (event.animationName === "pbp-arrive") (event.target as HTMLElement).classList.remove("arrived");
+});
 
 previousNoteButton.addEventListener("click", () => goToNote("previous"));
 nextNoteButton.addEventListener("click", () => goToNote("next"));

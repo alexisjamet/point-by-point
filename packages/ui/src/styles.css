@@ -35,6 +35,7 @@
     --pbp-mark: rgba(242, 196, 64, 0.24);
     --pbp-hover: rgba(122, 167, 255, 0.12);
     --pbp-danger: var(--color-text-danger, #f2a49d);
+    --pbp-marker: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%23ffd400' fill-opacity='.34' d='M2.5,4.2 C10,2.4 19,5.1 30,3.6 C44,1.9 58,4.8 73,3.1 C84,1.9 92,3.6 98,2.6 C99.6,6.2 99.1,11.4 98.4,16.3 C90,17.9 78,15.4 65,17.2 C50,19.1 36,15.9 21,17.6 C12,18.6 6,16.3 1.6,17.1 C.4,13 .9,8 2.5,4.2 Z'/%3E%3Cpath fill='%23ffd400' fill-opacity='.2' d='M4,7 C20,5.5 40,8.5 60,6.5 C75,5.3 88,7.4 96,6 C96.5,9 96.2,12 95.8,14 C80,15.5 62,12.8 45,14.6 C28,16.3 14,13.6 3.5,14.4 C3,12 3.2,9.5 4,7 Z'/%3E%3C/svg%3E");
   }
 }
 
@@ -49,6 +50,7 @@
   --pbp-mark: rgba(242, 196, 64, 0.24);
   --pbp-hover: rgba(122, 167, 255, 0.12);
   --pbp-danger: var(--color-text-danger, #f2a49d);
+  --pbp-marker: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%23ffd400' fill-opacity='.34' d='M2.5,4.2 C10,2.4 19,5.1 30,3.6 C44,1.9 58,4.8 73,3.1 C84,1.9 92,3.6 98,2.6 C99.6,6.2 99.1,11.4 98.4,16.3 C90,17.9 78,15.4 65,17.2 C50,19.1 36,15.9 21,17.6 C12,18.6 6,16.3 1.6,17.1 C.4,13 .9,8 2.5,4.2 Z'/%3E%3Cpath fill='%23ffd400' fill-opacity='.2' d='M4,7 C20,5.5 40,8.5 60,6.5 C75,5.3 88,7.4 96,6 C96.5,9 96.2,12 95.8,14 C80,15.5 62,12.8 45,14.6 C28,16.3 14,13.6 3.5,14.4 C3,12 3.2,9.5 4,7 Z'/%3E%3C/svg%3E");
 }
 
 * {
@@ -331,14 +333,13 @@ body {
 .response:not(.streaming) .phrase {
   cursor: pointer;
   border-radius: 3px;
-  transition: background-color 120ms ease;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
 }
 
 @media (hover: hover) {
   .response:not(.streaming) .phrase:hover {
-    background: var(--pbp-hover);
+    background-color: var(--pbp-hover);
   }
 }
 
@@ -347,9 +348,29 @@ body {
   outline-offset: 1px;
 }
 
-.response .phrase.annotated,
-.response .phrase.annotated-passage {
-  background: var(--pbp-mark);
+/* Annotated sentences get a highlighter stroke that wipes in from the left, and back out when the
+   note is removed. The stroke runs a little past the words (padding), without moving them (margin). */
+.response span.phrase {
+  padding: 0 0.12em;
+  margin: 0 -0.12em;
+  background-image: var(--pbp-marker);
+  background-repeat: no-repeat;
+  background-position: 0 60%;
+  background-size: 0% 88%;
+  transition:
+    background-color 150ms ease,
+    background-size 650ms cubic-bezier(0.3, 0.9, 0.4, 1);
+}
+
+.response span.phrase.annotated,
+.response span.phrase.annotated-passage {
+  background-size: 100% 88%;
+}
+
+/* A code block is one unit: a flat tint suits it better than a stroke. */
+.response .phrase-unit.annotated,
+.response .phrase-unit.annotated-passage {
+  background-color: var(--pbp-mark);
 }
 
 ::highlight(pbp-selection) {
@@ -682,4 +703,111 @@ body.sheet:not(.focus-mode) #app {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
+}
+
+/* ---------- Motion ----------
+   Only opacity, transforms and backgrounds move: the frame resizes itself to its content, so
+   animating heights would make the host's layout jump. */
+
+:root {
+  /* A long, soft ease-out for things that arrive, a slight overshoot for confirmations. */
+  --pbp-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --pbp-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  /* A highlighter stroke with uneven edges, drawn under annotated sentences (the dark themes redefine it above). */
+  --pbp-marker: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%23f2c440' fill-opacity='.5' d='M2.5,4.2 C10,2.4 19,5.1 30,3.6 C44,1.9 58,4.8 73,3.1 C84,1.9 92,3.6 98,2.6 C99.6,6.2 99.1,11.4 98.4,16.3 C90,17.9 78,15.4 65,17.2 C50,19.1 36,15.9 21,17.6 C12,18.6 6,16.3 1.6,17.1 C.4,13 .9,8 2.5,4.2 Z'/%3E%3Cpath fill='%23f2c440' fill-opacity='.3' d='M4,7 C20,5.5 40,8.5 60,6.5 C75,5.3 88,7.4 96,6 C96.5,9 96.2,12 95.8,14 C80,15.5 62,12.8 45,14.6 C28,16.3 14,13.6 3.5,14.4 C3,12 3.2,9.5 4,7 Z'/%3E%3C/svg%3E");
+}
+
+/* While Claude writes, the waiting line shimmers. */
+.response.waiting {
+  color: transparent;
+  background: linear-gradient(
+      90deg,
+      var(--pbp-faint) 0% 38%,
+      var(--pbp-text) 50%,
+      var(--pbp-faint) 62% 100%
+    )
+    0 0 / 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: pbp-shimmer 1.6s linear infinite;
+}
+
+@keyframes pbp-shimmer {
+  from { background-position: 110% 0; }
+  to { background-position: -110% 0; }
+}
+
+/* The response rises into place once, when its first words arrive; streaming and the final render
+   replace its content, not the element, so it does not replay. */
+.response:not(.waiting) {
+  animation: pbp-rise 520ms var(--pbp-ease) both;
+}
+
+@keyframes pbp-rise {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+.response .phrase-unit {
+  transition: background-color 200ms ease;
+}
+
+.note {
+  animation: pbp-note-in 320ms var(--pbp-ease) both;
+}
+
+@keyframes pbp-note-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.985); }
+}
+
+/* The note an arrow lands on lights up for a moment. The entrance stays in the list, so it does not
+   replay when the class goes. */
+.note.arrived {
+  animation:
+    pbp-note-in 320ms var(--pbp-ease) both,
+    pbp-arrive 900ms var(--pbp-ease);
+}
+
+@keyframes pbp-arrive {
+  0%, 30% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--pbp-accent) 28%, transparent); }
+  100% { box-shadow: 0 0 0 4px transparent; }
+}
+
+button {
+  transition:
+    background-color 150ms ease,
+    opacity 150ms ease,
+    transform 120ms var(--pbp-ease);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* "Passed to the conversation" pops in; an error slides in. */
+.status {
+  display: inline-block;
+  animation: pbp-pop 420ms var(--pbp-spring) both;
+}
+
+@keyframes pbp-pop {
+  from { opacity: 0; transform: scale(0.85); }
+}
+
+.error,
+.fallback {
+  animation: pbp-slide-in 260ms var(--pbp-ease) both;
+}
+
+@keyframes pbp-slide-in {
+  from { opacity: 0; transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
 }
