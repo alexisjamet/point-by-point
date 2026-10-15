@@ -133,14 +133,14 @@ function renderPartial(text: string) {
   });
 }
 
-function renderFinal(text: string) {
+function renderFinal(text: string, diagnostic = false) {
   if (ready && text === markdown) return;
   markdown = text;
   pendingPartial = null;
   for (const annotation of annotations.values()) annotation.note.remove();
   annotations.clear();
 
-  if (isDiagnosticRequest(text)) {
+  if (diagnostic) {
     content.classList.remove("streaming", "waiting");
     content.removeAttribute("aria-busy");
     renderDiagnostic(content, app, s, () => isTouch(), store.durable);
@@ -694,7 +694,9 @@ app.addEventListener("toolinputpartial", (params) => {
 app.addEventListener("toolinput", (params) => {
   const text = fullMarkdown(params.arguments);
   if (text === null) return;
-  renderFinal(text);
+  // The command is read from the markdown alone: Claude may add a title to it.
+  const body = params.arguments?.markdown;
+  renderFinal(text, typeof body === "string" && isDiagnosticRequest(body));
   startRecencyWatch();
 });
 

@@ -4,8 +4,9 @@ import type { Strings } from "./i18n";
 /** Sending this exact text as the response opens the display diagnostic instead of a response. */
 export const DIAGNOSTIC_COMMAND = "/point-by-point-diagnostic";
 
+/** Also accepts the command wrapped in backticks or quotes, as Claude sometimes sends it. */
 export function isDiagnosticRequest(markdown: string): boolean {
-  return markdown.trim() === DIAGNOSTIC_COMMAND;
+  return markdown.trim().replace(/^[`"']+|[`"']+$/g, "").trim() === DIAGNOSTIC_COMMAND;
 }
 
 /**

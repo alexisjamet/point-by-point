@@ -256,3 +256,16 @@ test("restores the notes of the last send", async ({ page }) => {
   await expect(frame.getByRole("button", { name: "Restore notes" })).toBeHidden();
   await expect(frame.locator(".phrase", { hasText: "Watch the error rate." })).toHaveClass(/annotated/);
 });
+
+for (const args of [
+  { markdown: "/point-by-point-diagnostic", title: "Diagnostic" },
+  { markdown: "`/point-by-point-diagnostic`" },
+]) {
+  test(`opens the diagnostic for ${JSON.stringify(args)}`, async ({ page }) => {
+    await page.goto("/");
+    await page.evaluate((value) => window.mount({ args: value }), args);
+    const frame = page.frameLocator("iframe").first();
+    await expect(frame.locator(".diagnostic-output")).toBeVisible();
+    await expect(frame.locator("#composer")).toBeHidden();
+  });
+}
