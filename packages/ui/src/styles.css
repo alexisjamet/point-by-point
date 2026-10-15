@@ -70,6 +70,15 @@ body {
   padding: 4px 2px 8px;
 }
 
+/* Phones: the mobile apps give the frame the full screen width, so keep the text off the edges
+   (same side padding as the fullscreen sheet). */
+@media (max-width: 600px) {
+  #app {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
 /* ---------- Response ---------- */
 
 .response {
