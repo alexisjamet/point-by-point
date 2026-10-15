@@ -102,6 +102,7 @@ function applyLabels() {
   storageNotice.textContent = s.noStorage;
   if (!statusLabel.hidden) statusLabel.textContent = s.sent;
   restoreButton.textContent = s.restore;
+  $<HTMLButtonElement>("#collapse").textContent = s.collapse;
   for (const sentence of sentences) labelSentence(sentence);
   for (const annotation of annotations.values()) labelNote(annotation);
   updateCount();
@@ -252,7 +253,7 @@ function createAnnotation(draft: DraftAnnotation, options: { focus: boolean }): 
     scheduleSave();
   });
   textarea.addEventListener("focus", () => {
-    if (isTouch() && !fullscreen) enterFocusMode(note);
+    if (isTouch()) enterFocusMode(note);
   });
   textarea.addEventListener("keydown", (event) => onFieldKeydown(event, annotation));
   done.addEventListener("click", () => leaveFocusMode());
@@ -281,6 +282,11 @@ function labelNote(annotation: Annotation) {
 function openNote(annotation: Annotation) {
   if (!isTouch()) {
     annotation.textarea.focus();
+    return;
+  }
+  if (inSheet()) {
+    enterFocusMode(annotation.note);
+    window.scrollTo(0, 0);
     return;
   }
   annotation.note.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -397,7 +403,11 @@ function setFullscreenClass(on: boolean) {
     const header = context?.platform === "mobile" || isTouch() ? MOBILE_FULLSCREEN_HEADER : 0;
     document.documentElement.style.setProperty("--pbp-sheet-top", `${Math.max(reported, header) + 12}px`);
   }
-  if (!on && focusTarget && document.body.classList.contains("sheet")) leaveFocusMode({ fromHost: true });
+  if (!on && inSheet()) leaveSheet({ fromHost: true });
+}
+
+function inSheet(): boolean {
+  return document.body.classList.contains("sheet");
 }
 
 async function enterFullscreen(target: HTMLElement) {
@@ -419,20 +429,32 @@ function enterFocusMode(target: HTMLElement) {
   document.body.classList.add("focus-mode");
 }
 
-function leaveFocusMode(options: { restoreFocus?: boolean; fromHost?: boolean } = {}) {
+// Leaving a note keeps the sheet fullscreen: the frame scrolls itself there, so the note stays in
+// view and the next point is a tap away. Back inline, the host owns the scroll and sends it to the
+// bottom of the conversation.
+function leaveFocusMode(options: { restoreFocus?: boolean } = {}) {
   const target = focusTarget;
   if (!target) return;
   focusTarget = null;
   target.classList.remove("active");
-  document.body.classList.remove("focus-mode", "sheet");
+  document.body.classList.remove("focus-mode");
   (document.activeElement as HTMLElement | null)?.blur();
+  const block = inSheet() ? "center" : "nearest";
+  requestAnimationFrame(() => target.scrollIntoView({ block }));
+  if (options.restoreFocus !== false && !isTouch()) target.querySelector("textarea")?.focus();
+}
+
+function leaveSheet(options: { fromHost?: boolean } = {}) {
+  if (focusTarget) leaveFocusMode({ restoreFocus: false });
+  if (!inSheet()) return;
+  document.body.classList.remove("sheet");
   if (fullscreen && !options.fromHost) {
     void app.requestDisplayMode({ mode: "inline" }).catch(() => undefined);
     setFullscreenClass(false);
   }
-  requestAnimationFrame(() => target.scrollIntoView({ block: "nearest" }));
-  if (options.restoreFocus !== false && !isTouch()) target.querySelector("textarea")?.focus();
 }
+
+$<HTMLButtonElement>("#collapse").addEventListener("click", () => leaveSheet());
 
 // ---------- Keyboard ----------
 
@@ -635,6 +657,7 @@ async function send() {
     autoGrow(remarkField);
     refreshHighlights();
     for (const sentence of sentences) labelSentence(sentence);
+    leaveSheet();
     if (focusTarget) leaveFocusMode({ restoreFocus: false });
     saveDraft();
     statusLabel.textContent = s.sent;

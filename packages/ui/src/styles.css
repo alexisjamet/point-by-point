@@ -480,6 +480,17 @@ body.focus-mode .note-quote {
   -webkit-line-clamp: 4;
 }
 
+/* Between notes, the sheet stays fullscreen and shows the whole response, with a way back. */
+.sheet-bar {
+  display: none;
+}
+
+body.sheet:not(.focus-mode) .sheet-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
 body.sheet #app {
   padding: var(--pbp-sheet-top, 12px) 14px max(12px, var(--pbp-safe-bottom, 0px));
 }

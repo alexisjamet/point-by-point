@@ -32,12 +32,41 @@ test("falls back to the focus mode when fullscreen is not available", async ({ p
   await expect(frame.locator(".note")).toHaveCount(1);
 });
 
-test("asks for fullscreen when the host offers it, and returns inline on Done", async ({ page }) => {
+test("asks for fullscreen when the host offers it, stays there between notes, and returns inline on request", async ({
+  page,
+}) => {
   const frame = await mount(page, { allowFullscreen: true });
+  const displayModes = async () => (await page.evaluate(() => window.recorded)).displayModes;
   await frame.locator(".phrase", { hasText: "First point here." }).tap();
   await expect(frame.locator("body")).toHaveClass(/sheet/);
   await expect(frame.locator(".phrase", { hasText: "Another paragraph." })).toBeHidden();
+  await expect(frame.locator("#collapse")).toBeHidden();
+
+  // Done shows the whole response, still fullscreen.
   await frame.locator(".note .note-done").tap();
+  await expect(frame.locator("body")).toHaveClass(/sheet/);
+  await expect(frame.locator("body")).not.toHaveClass(/focus-mode/);
+  await expect(frame.locator(".phrase", { hasText: "Another paragraph." })).toBeVisible();
+  await expect(frame.locator("#collapse")).toBeVisible();
+
+  // The next point opens without another fullscreen request.
+  await frame.locator(".phrase", { hasText: "Another paragraph." }).tap();
+  await expect(frame.locator("body")).toHaveClass(/focus-mode/);
+  await expect(frame.locator(".note.active .note-quote")).toHaveText("Another paragraph.");
+  await frame.locator(".note.active .note-done").tap();
+  expect(await displayModes()).toEqual(["fullscreen"]);
+
+  await frame.locator("#collapse").tap();
+  await expect(frame.locator("body")).not.toHaveClass(/sheet|focus-mode/);
+  await expect.poll(displayModes).toEqual(["fullscreen", "inline"]);
+});
+
+test("sending from the fullscreen sheet returns inline", async ({ page }) => {
+  const frame = await mount(page, { allowFullscreen: true });
+  await frame.locator(".phrase", { hasText: "First point here." }).tap();
+  await frame.locator(".note textarea").fill("Why?");
+  await frame.locator(".note .note-done").tap();
+  await frame.locator("#send").tap();
   await expect(frame.locator("body")).not.toHaveClass(/sheet|focus-mode/);
   await expect.poll(async () => (await page.evaluate(() => window.recorded)).displayModes).toEqual(["fullscreen", "inline"]);
 });

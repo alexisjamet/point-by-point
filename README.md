@@ -102,7 +102,9 @@ so you never end up with an invisible response.
   Cmd/Ctrl+Enter sends.
 - Mobile: creating a note does not open the keyboard; fields are 16 px (no iOS zoom). Opening a
   note asks the host for fullscreen; if the host refuses, a focus mode keeps only the quote, the
-  field and a **Done** button above the keyboard.
+  field and a **Done** button above the keyboard. In fullscreen, **Done** shows the whole response
+  at the note, still fullscreen, so you can go on to the next point; **Send** or **Back to the
+  conversation** returns inline.
 - English and French, following the host's locale. Light and dark, following the host's theme.
 - Links open through the host. Images are shown as links (the interface loads nothing remote).
 
