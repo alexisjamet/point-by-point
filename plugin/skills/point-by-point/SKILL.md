@@ -21,7 +21,8 @@ back in a single message.
 2. Call `annotate_response` with that markdown in `markdown`. Add a short `title` only when the
    response has a natural one.
 3. Write nothing else in the chat, before or after the call: the interface is the response.
-   The tool returns a short confirmation; do not repeat or summarise the response.
+   Not even a line announcing it ("The response is open for your annotations"). The tool returns
+   a short confirmation; end your turn right after it, without repeating or summarising anything.
 
 Keep sentences self-contained where you can: the user reacts sentence by sentence, so each one
 should make sense when quoted on its own.

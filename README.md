@@ -36,7 +36,10 @@ so you never end up with an invisible response.
   paragraph. Click an annotated sentence again to return to its note.
 - An optional general remark at the bottom; a counter; empty notes are ignored.
 - Notes are sent in document order; backticks in quotes become apostrophes.
-- After sending, a "Sent" mark appears and the widget stays usable. A widget from an earlier
+- **Send** hands the message to the host. Claude Desktop places it in your message box under a
+  caution banner it shows for every message an interactive app proposes; read it and press Enter
+  to send it. If you discard it, **Restore notes** brings your notes back.
+- After sending, a mark appears and the widget stays usable. A widget from an earlier
   response can still send: its message starts with "(About an earlier response)".
 - Every keystroke is saved as a draft and restored if the page reloads before sending.
 - Keyboard: Tab / Shift+Tab move between sentences, Enter opens a note, Escape leaves a note,

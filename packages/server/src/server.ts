@@ -25,7 +25,8 @@ export const TOOL_DESCRIPTION =
   "question; address each point in order, then any general remark at the end.";
 
 export const TOOL_RESULT_TEXT =
-  "Response displayed to the user for annotation. Do not repeat it in the chat; wait for their reply.";
+  "Response displayed to the user for annotation. End your turn now without writing anything else: " +
+  "any text you add appears under the interface. The user will reply through it.";
 
 /** True when the client announced it can render MCP Apps interfaces. */
 export function supportsUi(capabilities: ClientCapabilities | null | undefined): boolean {

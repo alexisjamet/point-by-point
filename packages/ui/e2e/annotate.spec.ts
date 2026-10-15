@@ -38,7 +38,7 @@ test("annotates sentences by click and sends them in document order", async ({ p
   await frame.locator("#remark").fill("Looks good overall.");
   await frame.locator("#send").click();
 
-  await expect(frame.locator("#status")).toHaveText("Sent");
+  await expect(frame.locator("#status")).toHaveText("Passed to the conversation");
   expect((await recorded(page)).messages).toEqual([
     "`First we migrate the database.` Back up first.\n\n`Watch the error rate.` Which dashboard?\n\nLooks good overall.",
   ]);
@@ -239,4 +239,20 @@ test("the diagnostic sends a fresh report", async ({ page }) => {
   expect(report).toMatch(/^Point-by-point diagnostic\n\n```json\n/);
   expect(report).toMatch(/"minHeight": \d+/);
   expect(report).toContain('"availableDisplayModes": [\n    "inline",\n    "fullscreen"\n  ]');
+});
+
+test("restores the notes of the last send", async ({ page }) => {
+  const frame = await mount(page);
+  await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
+  await page.keyboard.type("Which dashboard?");
+  await frame.locator("#remark").fill("Overall fine.");
+  await frame.locator("#send").click();
+  await expect(frame.locator(".note")).toHaveCount(0);
+
+  await frame.getByRole("button", { name: "Restore notes" }).click();
+  await expect(frame.locator(".note textarea")).toHaveValue("Which dashboard?");
+  await expect(frame.locator("#remark")).toHaveValue("Overall fine.");
+  await expect(frame.locator("#count")).toHaveText("1 annotation");
+  await expect(frame.getByRole("button", { name: "Restore notes" })).toBeHidden();
+  await expect(frame.locator(".phrase", { hasText: "Watch the error rate." })).toHaveClass(/annotated/);
 });

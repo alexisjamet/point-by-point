@@ -343,10 +343,35 @@ button:disabled {
 
 .send-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 6px 10px;
   margin-top: 10px;
+}
+
+.count,
+.status-group {
+  white-space: nowrap;
+}
+
+.status-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-group:not(:has(> :not([hidden]))) {
+  display: none;
+}
+
+/* Narrow frames: the status goes on its own line under the counter and the button. */
+@media (max-width: 480px) {
+  .status-group {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
 }
 
 .count {
@@ -362,6 +387,17 @@ button:disabled {
 
 .status::before {
   content: "✓ ";
+}
+
+button.link-button {
+  border: none;
+  background: none;
+  min-height: auto;
+  padding: 2px 4px;
+  color: var(--pbp-muted);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .error {

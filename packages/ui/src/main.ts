@@ -36,6 +36,7 @@ const remarkField = $<HTMLTextAreaElement>("#remark");
 const sendButton = $<HTMLButtonElement>("#send");
 const countLabel = $<HTMLElement>("#count");
 const statusLabel = $<HTMLElement>("#status");
+const restoreButton = $<HTMLButtonElement>("#restore");
 const errorBox = $<HTMLElement>("#error");
 const fallbackBox = $<HTMLElement>("#fallback");
 const fallbackText = $<HTMLTextAreaElement>("#fallback-text");
@@ -95,6 +96,7 @@ function applyLabels() {
   hintLabel.textContent = isTouch() ? s.hintTouch : s.hint;
   storageNotice.textContent = s.noStorage;
   if (!statusLabel.hidden) statusLabel.textContent = s.sent;
+  restoreButton.textContent = s.restore;
   for (const sentence of sentences) labelSentence(sentence);
   for (const annotation of annotations.values()) labelNote(annotation);
   updateCount();
@@ -240,7 +242,6 @@ function createAnnotation(draft: DraftAnnotation, options: { focus: boolean }): 
   textarea.addEventListener("input", () => {
     annotation.text = textarea.value;
     autoGrow(textarea);
-    statusLabel.hidden = true;
     hideError();
     updateCount();
     scheduleSave();
@@ -302,7 +303,6 @@ function annotateSentence(sentence: Sentence) {
     },
     { focus: true },
   );
-  statusLabel.hidden = true;
   scheduleSave();
 }
 
@@ -319,7 +319,6 @@ function annotateSelection(range: Range) {
   }
   window.getSelection()?.removeAllRanges();
   createAnnotation({ kind: "selection", start, end, quote, text: "" }, { focus: true });
-  statusLabel.hidden = true;
   scheduleSave();
 }
 
@@ -500,7 +499,6 @@ document.addEventListener("selectionchange", () => {
 
 remarkField.addEventListener("input", () => {
   autoGrow(remarkField);
-  statusLabel.hidden = true;
   hideError();
   scheduleSave();
 });
@@ -577,6 +575,10 @@ function showError(message: string) {
   errorBox.hidden = false;
 }
 
+// Hosts may only place the message in the input box for the user to confirm. If the user discards
+// it there, the last batch can be brought back.
+let lastSent: Draft | null = null;
+
 let sending = false;
 async function send() {
   if (!ready || sending) return;
@@ -595,6 +597,12 @@ async function send() {
   try {
     const result = await app.sendMessage({ role: "user", content: [{ type: "text", text: message }] });
     if (result.isError) throw new Error("rejected");
+    lastSent = {
+      annotations: Array.from(annotations.values())
+        .filter((annotation) => annotation.text.trim())
+        .map(({ kind, sentence, start, end, quote, text }) => ({ kind, sentence, start, end, quote, text })),
+      remark: remarkField.value,
+    };
     for (const annotation of Array.from(annotations.values())) {
       if (!annotation.text.trim()) continue;
       annotations.delete(annotation.id);
@@ -608,6 +616,7 @@ async function send() {
     saveDraft();
     statusLabel.textContent = s.sent;
     statusLabel.hidden = false;
+    restoreButton.hidden = false;
   } catch {
     showError(s.sendFailed);
     fallbackText.value = message;
@@ -621,6 +630,23 @@ async function send() {
 }
 
 sendButton.addEventListener("click", () => void send());
+
+restoreButton.addEventListener("click", () => {
+  if (!lastSent) return;
+  for (const saved of lastSent.annotations) {
+    if (saved.kind === "sentence" && saved.sentence !== undefined && sentenceAnnotation(saved.sentence)) continue;
+    createAnnotation(saved, { focus: false });
+  }
+  if (lastSent.remark.trim()) {
+    remarkField.value = remarkField.value.trim() ? `${remarkField.value}\n\n${lastSent.remark}` : lastSent.remark;
+    autoGrow(remarkField);
+  }
+  lastSent = null;
+  restoreButton.hidden = true;
+  statusLabel.hidden = true;
+  updateCount();
+  saveDraft();
+});
 
 copyButton.addEventListener("click", async () => {
   const text = fallbackText.value;
