@@ -32,25 +32,43 @@ export const TOOL_RESULT_TEXT =
   "Response displayed to the user for annotation. End your turn now without writing anything else: " +
   "any text you add appears under the interface. The user will reply through it.";
 
-/** True when the client announced it can render MCP Apps interfaces. */
+/**
+ * True when the client announced the MCP Apps extension. The MIME types it lists are not checked:
+ * hosts cache a tool list, so one wrong "no" leaves the connector without tools until it is refreshed.
+ */
 export function supportsUi(capabilities: ClientCapabilities | null | undefined): boolean {
-  return getUiCapability(capabilities)?.mimeTypes?.includes(RESOURCE_MIME_TYPE) === true;
+  return getUiCapability(capabilities) !== undefined;
 }
 
 type JsonRpcMessage = { method?: unknown; params?: { capabilities?: unknown; _meta?: Record<string, unknown> } };
+
+/** Whether to declare the tool, and which evidence decided it. `reason` is a fixed string, safe to log. */
+export type UiSupport = { ui: boolean; reason: string };
 
 /**
  * Reads the client's UI support from one HTTP request, without any server-side state:
  * - 2026-07-28 requests carry the client capabilities in their `_meta` envelope;
  * - a 2025 `initialize` carries them in its params;
  * - later 2025 requests echo the session id handed out at `initialize`, which encodes the answer.
+ * A 2025 request without that session id is assumed to render interfaces: an empty tool list would
+ * stick in the host's cache, which costs more than the tool reaching a client that cannot show it.
  */
-export function uiSupportFromRequest(body: unknown, sessionId: string | null): boolean {
+export function uiSupportFromRequest(body: unknown, sessionId: string | null): UiSupport {
   const message = (Array.isArray(body) ? body[0] : body) as JsonRpcMessage | undefined;
   const envelope = message?.params?._meta?.[CLIENT_CAPABILITIES_META_KEY];
-  if (envelope && typeof envelope === "object") return supportsUi(envelope as ClientCapabilities);
-  if (message?.method === "initialize") return supportsUi(message.params?.capabilities as ClientCapabilities);
-  return sessionId?.startsWith(UI_SESSION_PREFIX) === true;
+  if (envelope && typeof envelope === "object") {
+    return supportsUi(envelope as ClientCapabilities)
+      ? { ui: true, reason: "2026 envelope with the ui extension" }
+      : { ui: false, reason: "2026 envelope without the ui extension" };
+  }
+  if (message?.method === "initialize") {
+    return supportsUi(message.params?.capabilities as ClientCapabilities)
+      ? { ui: true, reason: "2025 initialize with the ui extension" }
+      : { ui: false, reason: "2025 initialize without the ui extension" };
+  }
+  if (sessionId?.startsWith(PLAIN_SESSION_PREFIX)) return { ui: false, reason: "2025 session opened without the ui extension" };
+  if (sessionId?.startsWith(UI_SESSION_PREFIX)) return { ui: true, reason: "2025 session opened with the ui extension" };
+  return { ui: true, reason: "2025 request without a session id of ours" };
 }
 
 export const UI_SESSION_PREFIX = "ui.";

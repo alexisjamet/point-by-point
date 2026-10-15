@@ -1,5 +1,5 @@
 import { createMcpHandler } from "@modelcontextprotocol/server";
-import { PLAIN_SESSION_PREFIX, UI_SESSION_PREFIX, createServer, uiSupportFromRequest } from "./server";
+import { PLAIN_SESSION_PREFIX, TOOL_NAME, UI_SESSION_PREFIX, createServer, uiSupportFromRequest } from "./server";
 import { VERSION } from "./ui.generated";
 
 export interface Env {
@@ -23,14 +23,21 @@ async function readJson(request: Request): Promise<unknown> {
   }
 }
 
-function isInitialize(body: unknown): boolean {
+function methodOf(body: unknown): unknown {
   const message = Array.isArray(body) ? body[0] : body;
-  return (message as { method?: unknown } | undefined)?.method === "initialize";
+  return (message as { method?: unknown } | undefined)?.method;
+}
+
+function isInitialize(body: unknown): boolean {
+  return methodOf(body) === "initialize";
 }
 
 async function serveMcp(request: Request): Promise<Response> {
   const body = await readJson(request);
-  const ui = uiSupportFromRequest(body, request.headers.get("mcp-session-id"));
+  const { ui, reason } = uiSupportFromRequest(body, request.headers.get("mcp-session-id"));
+  // Hosts keep the tool list, so a list without the tool is worth a trace. The line is a fixed
+  // string: nothing from the request, which could hold conversation text.
+  if (!ui && methodOf(body) === "tools/list") console.log(`tools/list without ${TOOL_NAME}: ${reason}`);
   const headers = new Headers(request.headers);
   headers.delete(UI_HEADER);
   if (ui) headers.set(UI_HEADER, "1");

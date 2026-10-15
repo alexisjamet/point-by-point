@@ -1,5 +1,5 @@
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import worker from "../src/index";
 import { MAX_MARKDOWN_LENGTH, TOOL_NAME, TOOL_RESULT_TEXT } from "../src/server";
 import { UI_URI } from "../src/ui.generated";
@@ -7,11 +7,11 @@ import { UI_URI } from "../src/ui.generated";
 const UI_CAPABILITIES = { extensions: { "io.modelcontextprotocol/ui": { mimeTypes: ["text/html;profile=mcp-app"] } } };
 type Era = "legacy" | "modern";
 
-async function connect(options: { ui: boolean; era: Era }) {
+async function connect(options: { ui: boolean | object; era: Era }) {
   const client = new Client(
     { name: "test-client", version: "1.0.0" },
     {
-      capabilities: options.ui ? UI_CAPABILITIES : {},
+      capabilities: options.ui === true ? UI_CAPABILITIES : options.ui || {},
       versionNegotiation: { mode: options.era === "modern" ? { pin: "2026-07-28" } : "legacy" },
     },
   );
@@ -37,6 +37,13 @@ describe.each<Era>(["legacy", "modern"])("%s protocol", (era) => {
     const client = await connect({ ui: false, era });
     const { tools } = await client.listTools();
     expect(tools.map((tool) => tool.name)).not.toContain(TOOL_NAME);
+    await client.close();
+  });
+
+  it("exposes the tool when the ui extension lists no MIME type", async () => {
+    const client = await connect({ ui: { extensions: { "io.modelcontextprotocol/ui": {} } }, era });
+    const { tools } = await client.listTools();
+    expect(tools.map((tool) => tool.name)).toContain(TOOL_NAME);
     await client.close();
   });
 
@@ -75,6 +82,62 @@ describe.each<Era>(["legacy", "modern"])("%s protocol", (era) => {
     expect(long.isError).toBe(true);
     expect(JSON.stringify(long.content)).toContain("too long");
     await client.close();
+  });
+});
+
+/** One raw JSON-RPC request, as a host sends it, without the SDK client. */
+async function post(body: object, headers: Record<string, string> = {}) {
+  const response = await worker.fetch(
+    new Request("https://pbp.test/mcp", {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json, text/event-stream", ...headers },
+      body: JSON.stringify(body),
+    }),
+    {},
+  );
+  const text = await response.text();
+  const data = text.startsWith("{") ? text : text.split("\n").find((line) => line.startsWith("data: "))?.slice(6);
+  return JSON.parse(data ?? "null");
+}
+
+function modernToolsList(capabilities: object, cursor?: string) {
+  return post(
+    {
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/list",
+      params: {
+        ...(cursor ? { cursor } : {}),
+        _meta: {
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+          "io.modelcontextprotocol/clientCapabilities": capabilities,
+        },
+      },
+    },
+    { "mcp-protocol-version": "2026-07-28", "mcp-method": "tools/list" },
+  );
+}
+
+describe("tool list decisions", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("exposes the tool to a 2025 request without a session id", async () => {
+    const reply = await post({ jsonrpc: "2.0", id: 1, method: "tools/list" }, { "mcp-protocol-version": "2025-06-18" });
+    expect(reply.result.tools.map((tool: { name: string }) => tool.name)).toContain(TOOL_NAME);
+  });
+
+  it("logs a fixed line, and nothing from the request, when it hides the tool", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const reply = await modernToolsList({ sampling: {} }, "conversation-text-must-not-leak");
+    expect(reply.result.tools).toEqual([]);
+    expect(log.mock.calls).toEqual([[`tools/list without ${TOOL_NAME}: 2026 envelope without the ui extension`]]);
+  });
+
+  it("logs nothing when it exposes the tool", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const reply = await modernToolsList(UI_CAPABILITIES);
+    expect(reply.result.tools.map((tool: { name: string }) => tool.name)).toContain(TOOL_NAME);
+    expect(log).not.toHaveBeenCalled();
   });
 });
 
