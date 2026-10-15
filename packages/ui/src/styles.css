@@ -260,18 +260,46 @@ li > .note-slot {
   margin: 6px 0;
 }
 
-.note {
+/* The note and the general remark are the field: the textarea inside has no frame of its own, and
+   the card lights up while the user writes in it. */
+.note,
+.remark {
   border: 1px solid var(--pbp-border);
-  border-left: 3px solid var(--pbp-accent);
-  border-radius: var(--pbp-radius);
-  background: var(--pbp-surface);
-  padding: 8px 10px;
+  border-radius: 12px;
   font-size: 14px;
   line-height: 1.4;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.note {
+  border-left: 3px solid var(--pbp-accent);
+  background: var(--pbp-surface);
+  padding: 10px 12px;
+}
+
+.remark {
+  background: var(--pbp-field);
+  padding: 12px 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  cursor: text;
+}
+
+.note:focus-within,
+.remark:focus-within {
+  border-color: var(--pbp-accent);
+  box-shadow: 0 0 0 3px var(--pbp-hover);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pbp-accent) 18%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note,
+  .remark {
+    transition: none;
+  }
 }
 
 .note-quote {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   color: var(--pbp-muted);
   font-size: 12.5px;
   font-style: italic;
@@ -288,25 +316,26 @@ textarea {
   overflow: hidden;
   font: inherit;
   font-size: 16px; /* 16px minimum: iOS does not zoom on focus */
-  line-height: 1.4;
+  line-height: 1.45;
   color: var(--pbp-text);
-  background: var(--pbp-field);
-  border: 1px solid var(--pbp-border);
-  border-radius: 6px;
-  padding: 7px 9px;
+  caret-color: var(--pbp-accent);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  outline: none;
 }
 
-textarea:focus {
-  outline: 2px solid var(--pbp-accent);
-  outline-offset: -1px;
-  border-color: transparent;
+textarea::placeholder {
+  color: var(--pbp-faint);
+  opacity: 1;
 }
 
 .note-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 button {
@@ -349,6 +378,19 @@ button:disabled {
 
 .note-done {
   display: none;
+}
+
+/* Remove stays quiet until pointed at: the note is about what the user writes. */
+button.note-remove {
+  border-color: transparent;
+  color: var(--pbp-faint);
+  margin-right: -6px;
+  margin-bottom: -4px;
+}
+
+button.note-remove:hover {
+  color: var(--pbp-danger);
+  background: var(--pbp-hover);
 }
 
 /* ---------- Composer ---------- */
@@ -445,7 +487,11 @@ button.link-button {
 
 .fallback textarea {
   font-family: var(--pbp-mono);
-  font-size: 16px;
+  color: var(--pbp-muted);
+  background: var(--pbp-surface);
+  border: 1px solid var(--pbp-border);
+  border-radius: 12px;
+  padding: 10px 12px;
 }
 
 .storage-notice {
