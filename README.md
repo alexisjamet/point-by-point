@@ -95,8 +95,8 @@ can be checked in this repository:
   no CDN script, font or image.
 - **Sanitised rendering.** Markdown goes through `marked` then DOMPurify with a strict allow-list;
   if DOMPurify cannot run, the text is shown as plain text, never as raw HTML.
-- **No authentication and no personal data.** A Cloudflare rate limit (120 requests per minute per
-  IP) protects against abuse.
+- **No authentication and no personal data.** A Cloudflare rate limit (1000 requests per minute per
+  IP — generous, because claude.ai users share a few Anthropic egress IPs) caps abusive clients.
 - **Minimal, pinned dependencies** (exact versions, lockfile), reviewed before each update.
 - **MIT licence**, reproducible build from this repository.
 

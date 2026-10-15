@@ -1,7 +1,6 @@
 import {
   App,
   applyDocumentTheme,
-  applyHostFonts,
   applyHostStyleVariables,
   type McpUiHostContext,
 } from "@modelcontextprotocol/ext-apps";
@@ -68,12 +67,13 @@ const app = new App({ name: "point-by-point", version: __APP_VERSION__ }, {}, { 
 function applyHostContext(context: McpUiHostContext | undefined, initial = false) {
   if (!context) return;
   if (context.theme) applyDocumentTheme(context.theme);
+  // Host font names are used through the variables, but host @font-face rules are not applied:
+  // they would make the widget download fonts, and it makes no outbound calls.
   if (context.styles?.variables) applyHostStyleVariables(context.styles.variables);
-  if (context.styles?.css?.fonts) applyHostFonts(context.styles.css.fonts);
   if (context.displayMode) setFullscreenClass(context.displayMode === "fullscreen");
   if (!context.locale && !initial) return;
   const nextLang = pickLang(context.locale ?? navigator.language);
-  if (nextLang !== lang) {
+  if (nextLang !== lang || initial) {
     lang = nextLang;
     s = t(lang);
     applyLabels();
@@ -120,6 +120,7 @@ function renderPartial(text: string) {
       content.replaceChildren(renderMarkdown(pendingPartial));
       content.classList.remove("waiting");
       content.classList.add("streaming");
+      content.setAttribute("aria-busy", "true");
     }
     pendingPartial = null;
   });
@@ -134,6 +135,7 @@ function renderFinal(text: string, toolCallId: string | number | undefined) {
 
   if (isDiagnosticRequest(text)) {
     content.classList.remove("streaming", "waiting");
+    content.removeAttribute("aria-busy");
     renderDiagnostic(content, app, s, () => isTouch(), store.durable);
     composer.hidden = true;
     return;
@@ -141,6 +143,7 @@ function renderFinal(text: string, toolCallId: string | number | undefined) {
 
   content.replaceChildren(renderMarkdown(text));
   content.classList.remove("streaming", "waiting");
+  content.removeAttribute("aria-busy");
   sentences = segmentContainer(content, lang);
   phrases = indexPhrases(content);
   for (const sentence of sentences) {
