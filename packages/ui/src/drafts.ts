@@ -12,7 +12,6 @@ export interface DraftAnnotation {
 
 export interface Draft {
   annotations: DraftAnnotation[];
-  remark: string;
 }
 
 const PREFIX = "point-by-point:draft:";
@@ -39,13 +38,14 @@ export function createDraftStore(storage: Storage | undefined = safeLocalStorage
       if (!raw) return null;
       try {
         const draft = JSON.parse(raw) as Draft;
-        return Array.isArray(draft.annotations) && typeof draft.remark === "string" ? draft : null;
+        // Drafts from earlier releases also carry a general remark, which no longer exists: dropped.
+        return Array.isArray(draft.annotations) ? { annotations: draft.annotations } : null;
       } catch {
         return null;
       }
     },
     save(key, draft) {
-      if (draft.annotations.length === 0 && draft.remark === "") remove(PREFIX + key);
+      if (draft.annotations.length === 0) remove(PREFIX + key);
       else set(PREFIX + key, JSON.stringify(draft));
     },
     clear(key) {

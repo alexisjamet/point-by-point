@@ -32,7 +32,6 @@ interface Annotation extends DraftAnnotation {
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
 const content = $<HTMLElement>("#content");
 const composer = $<HTMLElement>("#composer");
-const remarkField = $<HTMLTextAreaElement>("#remark");
 const sendButton = $<HTMLButtonElement>("#send");
 const countLabel = $<HTMLElement>("#count");
 const previousNoteButton = $<HTMLButtonElement>("#previous-note");
@@ -95,12 +94,9 @@ function isTouch(): boolean {
 
 function applyLabels() {
   document.documentElement.lang = lang;
-  remarkField.placeholder = s.remarkPlaceholder;
-  remarkField.setAttribute("aria-label", s.remarkLabel);
   sendButton.textContent = s.send;
   sendButton.title = s.send;
   copyButton.textContent = s.copy;
-  $<HTMLButtonElement>("#remark-done").textContent = s.done;
   hintLabel.textContent = isTouch() ? s.hintTouch : s.hint;
   storageNotice.textContent = s.noStorage;
   if (!statusLabel.hidden) statusLabel.textContent = s.sent;
@@ -495,8 +491,6 @@ content.addEventListener("keydown", (event) => {
   if (sentence) annotateSentence(sentence);
 });
 
-remarkField.addEventListener("keydown", (event) => onFieldKeydown(event, null));
-
 // ---------- Pointer ----------
 
 content.addEventListener("click", (event) => {
@@ -516,7 +510,25 @@ content.addEventListener("click", (event) => {
   if (sentence) annotateSentence(sentence);
 });
 
-/** True while the user types in a note or the remark: selections there belong to the field. */
+// The sentence under the mouse gets the annotation's highlighter stroke, on all its spans at once (a
+// sentence is split into several spans around bold text or links).
+let hoveredSentence: Sentence | null = null;
+
+function hoverSentence(sentence: Sentence | null) {
+  if (sentence === hoveredSentence) return;
+  for (const span of hoveredSentence?.spans ?? []) span.classList.remove("hovered");
+  hoveredSentence = sentence;
+  for (const span of sentence?.spans ?? []) span.classList.add("hovered");
+}
+
+content.addEventListener("pointerover", (event) => {
+  if (event.pointerType !== "mouse") return;
+  const phrase = (event.target as HTMLElement).closest<HTMLElement>(".phrase[data-s]");
+  hoverSentence(ready && phrase && !phrase.closest(".note") ? (sentences[Number(phrase.dataset.s)] ?? null) : null);
+});
+content.addEventListener("pointerleave", () => hoverSentence(null));
+
+/** True while the user types in a note: selections there belong to the field. */
 function editingText(): boolean {
   const active = document.activeElement;
   return !!active && (active.tagName === "TEXTAREA" || active.tagName === "INPUT");
@@ -555,21 +567,7 @@ document.addEventListener("selectionchange", () => {
   }, 900);
 });
 
-// ---------- Remark, counter, drafts ----------
-
-remarkField.addEventListener("input", () => {
-  autoGrow(remarkField);
-  hideError();
-  scheduleSave();
-});
-remarkField.addEventListener("focus", () => {
-  if (isTouch()) enterFocusMode(composer);
-});
-$<HTMLButtonElement>("#remark-done").addEventListener("click", () => leaveFocusMode());
-// The card around the field is the field: a click in its padding writes in it too.
-remarkField.parentElement!.addEventListener("click", (event) => {
-  if (event.target === event.currentTarget) remarkField.focus();
-});
+// ---------- Counter, drafts ----------
 
 function autoGrow(field: HTMLTextAreaElement) {
   field.style.height = "auto";
@@ -660,7 +658,6 @@ function currentDraft(): Draft {
       quote,
       text,
     })),
-    remark: remarkField.value,
   };
 }
 
@@ -676,8 +673,6 @@ function restoreDraft() {
     if (saved.kind === "sentence" && (saved.sentence === undefined || !sentences[saved.sentence])) continue;
     createAnnotation(saved, { focus: false });
   }
-  remarkField.value = draft.remark;
-  autoGrow(remarkField);
 }
 
 window.addEventListener("pagehide", saveDraft);
@@ -705,7 +700,7 @@ let sending = false;
 async function send() {
   if (!ready || sending) return;
   hideError();
-  const message = compose(Array.from(annotations.values()).map(({ quote, text, start }) => ({ quote, text, order: start })), remarkField.value, {
+  const message = compose(Array.from(annotations.values()).map(({ quote, text, start }) => ({ quote, text, order: start })), {
     contextLine: previous ? s.previousContext : undefined,
   });
   if (!message) {
@@ -723,15 +718,12 @@ async function send() {
       annotations: Array.from(annotations.values())
         .filter((annotation) => annotation.text.trim())
         .map(({ kind, sentence, start, end, quote, text }) => ({ kind, sentence, start, end, quote, text })),
-      remark: remarkField.value,
     };
     for (const annotation of Array.from(annotations.values())) {
       if (!annotation.text.trim()) continue;
       annotations.delete(annotation.id);
       annotation.note.remove();
     }
-    remarkField.value = "";
-    autoGrow(remarkField);
     refreshHighlights();
     for (const sentence of sentences) labelSentence(sentence);
     leaveSheet();
@@ -759,10 +751,6 @@ restoreButton.addEventListener("click", () => {
   for (const saved of lastSent.annotations) {
     if (saved.kind === "sentence" && saved.sentence !== undefined && sentenceAnnotation(saved.sentence)) continue;
     createAnnotation(saved, { focus: false });
-  }
-  if (lastSent.remark.trim()) {
-    remarkField.value = remarkField.value.trim() ? `${remarkField.value}\n\n${lastSent.remark}` : lastSent.remark;
-    autoGrow(remarkField);
   }
   lastSent = null;
   restoreButton.hidden = true;

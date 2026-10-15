@@ -8,7 +8,6 @@
   --pbp-border: var(--color-border-secondary, #dedcd5);
   --pbp-accent: #2f6fde;
   --pbp-mark: rgba(242, 196, 64, 0.32);
-  --pbp-hover: rgba(47, 111, 222, 0.08);
   --pbp-danger: var(--color-text-danger, #b3261e);
   --pbp-radius: var(--border-radius-md, 8px);
   /* Derived from the theme colours above, so they follow light and dark on their own. */
@@ -42,7 +41,6 @@
     --pbp-border: var(--color-border-secondary, #3d3b37);
     --pbp-accent: #7aa7ff;
     --pbp-mark: rgba(242, 196, 64, 0.24);
-    --pbp-hover: rgba(122, 167, 255, 0.12);
     --pbp-danger: var(--color-text-danger, #f2a49d);
     --pbp-send: #d97757;
     --pbp-marker: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%23ffd400' fill-opacity='.34' d='M2.5,4.2 C10,2.4 19,5.1 30,3.6 C44,1.9 58,4.8 73,3.1 C84,1.9 92,3.6 98,2.6 C99.6,6.2 99.1,11.4 98.4,16.3 C90,17.9 78,15.4 65,17.2 C50,19.1 36,15.9 21,17.6 C12,18.6 6,16.3 1.6,17.1 C.4,13 .9,8 2.5,4.2 Z'/%3E%3Cpath fill='%23ffd400' fill-opacity='.2' d='M4,7 C20,5.5 40,8.5 60,6.5 C75,5.3 88,7.4 96,6 C96.5,9 96.2,12 95.8,14 C80,15.5 62,12.8 45,14.6 C28,16.3 14,13.6 3.5,14.4 C3,12 3.2,9.5 4,7 Z'/%3E%3C/svg%3E");
@@ -58,7 +56,6 @@
   --pbp-border: var(--color-border-secondary, #3d3b37);
   --pbp-accent: #7aa7ff;
   --pbp-mark: rgba(242, 196, 64, 0.24);
-  --pbp-hover: rgba(122, 167, 255, 0.12);
   --pbp-danger: var(--color-text-danger, #f2a49d);
   --pbp-send: #d97757;
   --pbp-marker: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20' preserveAspectRatio='none'%3E%3Cpath fill='%23ffd400' fill-opacity='.34' d='M2.5,4.2 C10,2.4 19,5.1 30,3.6 C44,1.9 58,4.8 73,3.1 C84,1.9 92,3.6 98,2.6 C99.6,6.2 99.1,11.4 98.4,16.3 C90,17.9 78,15.4 65,17.2 C50,19.1 36,15.9 21,17.6 C12,18.6 6,16.3 1.6,17.1 C.4,13 .9,8 2.5,4.2 Z'/%3E%3Cpath fill='%23ffd400' fill-opacity='.2' d='M4,7 C20,5.5 40,8.5 60,6.5 C75,5.3 88,7.4 96,6 C96.5,9 96.2,12 95.8,14 C80,15.5 62,12.8 45,14.6 C28,16.3 14,13.6 3.5,14.4 C3,12 3.2,9.5 4,7 Z'/%3E%3C/svg%3E");
@@ -350,19 +347,14 @@ body {
   box-decoration-break: clone;
 }
 
-@media (hover: hover) {
-  .response:not(.streaming) .phrase:hover {
-    background-color: var(--pbp-hover);
-  }
-}
-
 .response .phrase:focus-visible {
   outline: 2px solid var(--pbp-accent);
   outline-offset: 1px;
 }
 
 /* Annotated sentences get a highlighter stroke that wipes in from the left, and back out when the
-   note is removed. The stroke runs a little past the words (padding), without moving them (margin). */
+   note is removed; the sentence under the mouse gets the same stroke, so pointing shows what a click
+   will annotate. The stroke runs a little past the words (padding), without moving them (margin). */
 .response span.phrase {
   padding: 0 0.12em;
   margin: 0 -0.12em;
@@ -376,13 +368,15 @@ body {
 }
 
 .response span.phrase.annotated,
-.response span.phrase.annotated-passage {
+.response span.phrase.annotated-passage,
+.response:not(.streaming) span.phrase.hovered {
   background-size: 100% 88%;
 }
 
 /* A code block is one unit: a flat tint suits it better than a stroke. */
 .response .phrase-unit.annotated,
-.response .phrase-unit.annotated-passage {
+.response .phrase-unit.annotated-passage,
+.response:not(.streaming) .phrase-unit.hovered {
   background-color: var(--pbp-mark);
 }
 
@@ -407,33 +401,22 @@ li > .note-slot {
   margin: 6px 0;
 }
 
-/* The note and the general remark are the field, drawn like Claude's composer: the textarea inside
-   has no frame of its own, and the card's hairline and shadow deepen while the user writes in it. */
-.note,
-.remark {
+/* The note is the field, drawn like Claude's composer: the textarea inside has no frame of its own,
+   and the card's hairline and shadow deepen while the user writes in it. */
+.note {
   border: 0.5px solid var(--pbp-line);
+  border-radius: 16px;
   background: var(--pbp-field);
   box-shadow: var(--pbp-card-shadow);
+  padding: 12px 14px 8px 16px;
   font-size: 14px;
   line-height: 1.4;
   cursor: text;
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
-.note {
-  border-radius: 16px;
-  padding: 12px 14px 8px 16px;
-}
-
-.remark {
-  border-radius: 20px;
-  padding: 14px 12px 10px 16px;
-}
-
 .note:focus-within,
-.remark:focus-within,
-.note:hover,
-.remark:hover {
+.note:hover {
   border-color: var(--pbp-line-strong);
   box-shadow: var(--pbp-card-shadow-focus);
 }
@@ -574,25 +557,24 @@ button.note-remove:hover {
   font-size: 14px;
 }
 
-.hint {
-  margin: 0 0 8px;
-  color: var(--pbp-faint);
-  font-size: 12.5px;
-}
-
-.remark-actions {
-  display: none;
-}
-
-/* The foot of the remark card, as in Claude's composer: the counter on the left, Send on the right. */
+/* One line under the response: how to annotate on the left, the counter and Send on the right. */
 .send-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px 10px;
-  margin-top: 10px;
-  cursor: default;
+  gap: 6px 12px;
+}
+
+.hint {
+  margin: 0 auto 0 0;
+  color: var(--pbp-faint);
+  font-size: 12.5px;
+}
+
+/* In the sheet, the bar at the bottom of the screen keeps to the arrows, the counter and Send. */
+body.sheet .hint {
+  display: none;
 }
 
 .count,
@@ -610,8 +592,17 @@ button.note-remove:hover {
   display: none;
 }
 
-/* Narrow frames: the status goes on its own line under the counter and the button. */
+/* Narrow frames: the hint goes on its own line above the counter and the button, the status on its
+   own line under them. */
 @media (max-width: 480px) {
+  .hint {
+    flex-basis: 100%;
+  }
+
+  .count {
+    margin-right: auto;
+  }
+
   .status-group {
     order: 3;
     flex-basis: 100%;
@@ -622,6 +613,10 @@ button.note-remove:hover {
 .count {
   color: var(--pbp-muted);
   font-size: 13px;
+}
+
+/* In the sheet, the counter sits next to the arrows. */
+body.sheet .count {
   margin-right: auto;
 }
 
@@ -692,27 +687,12 @@ body.focus-mode .note-slot {
   margin: 0;
 }
 
-body.focus-mode .composer.active .remark-actions {
-  display: flex;
-}
-
-body.focus-mode .note.active .note-done,
-body.focus-mode .composer.active .note-done {
+body.focus-mode .note.active .note-done {
   display: inline-flex;
   align-items: center;
 }
 
-body.focus-mode .composer:not(.active) {
-  display: none;
-}
-
-body.focus-mode .composer.active {
-  margin-top: 0;
-  border-top: none;
-}
-
-body.focus-mode:has(.composer.active) #content,
-body.focus-mode .composer.active .hint {
+body.focus-mode .composer {
   display: none;
 }
 

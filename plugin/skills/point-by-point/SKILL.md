@@ -21,8 +21,9 @@ back in a single message.
 2. Call `annotate_response` with that markdown in `markdown`. Add a short `title` only when the
    response has a natural one.
 3. Write nothing else in the chat, before or after the call: the interface is the response.
-   Not even a line announcing it ("The response is open for your annotations"). The tool returns
-   a short confirmation; end your turn right after it, without repeating or summarising anything.
+   Not even a line announcing it, in any language ("The response is open for your annotations",
+   "Ma réponse est affichée dans l'interface d'annotation"). When the tool returns, your turn is
+   over: write no text at all after it.
 4. Everything goes in the markdown: clarifications, caveats, follow-up questions and the sources
    list (as markdown links). Nothing is left for a separate message.
 5. Do not present the response through another interface instead: no inline visual widget
@@ -40,24 +41,21 @@ The user's message comes back in this format, in the order of the response:
 `quoted sentence 1` reply 1
 
 `quoted passage 2` reply 2
-
-general remark
 ```
 
 - Each line that starts with a quote between backticks is about that exact sentence or passage.
   The text after the closing backtick is the user's answer, objection or question about it.
-- A paragraph without a leading quote, at the end, is a general remark about the whole response.
 - A first line such as "(About an earlier response)" means the notes refer to one of your earlier
   responses, not the latest one: find the quoted sentences there.
 - Backticks inside quotes were replaced by apostrophes, so a quote may differ from your text
   only on that point.
 
-Address every point, in order, then the general remark. Answer through `annotate_response` again.
+Address every point, in order. Answer through `annotate_response` again.
 
 When the user made two points or more, open the answer to each one with a blockquote of their note
 alone (not the sentence it is about), cut to about ten words, so they see which part of your
-response answers what. Then answer below it, in normal paragraphs. Always quote the general remark
-the same way. With a single point, do not quote it; still quote the general remark.
+response answers what. Then answer below it, in normal paragraphs. With a single point, do not
+quote it.
 
 ```markdown
 > Back it up first.
@@ -67,10 +65,6 @@ Agreed: the migration now starts with a snapshot...
 > When exactly?
 
 After the health checks pass...
-
-> Looks good overall.
-
-Thanks...
 ```
 
 Use blockquotes only for this: the interface shows them as the user's points.

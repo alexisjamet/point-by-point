@@ -23,14 +23,16 @@ export const TOOL_DESCRIPTION =
   "writing the text in the chat. Pass the complete response as markdown, sources and follow-up questions " +
   "included. Write nothing else in the chat, and do not use another widget or a question form instead. " +
   "The user's reply quotes each sentence they react to between backticks, followed by their answer or " +
-  "question; address each point in order, then any general remark at the end. When there are two points " +
-  "or more, open the answer to each with a blockquote of the user's note alone, cut to about ten words; " +
-  "always open the answer to the general remark the same way. Use blockquotes for nothing else: the " +
-  "interface shows them as the user's points.";
+  "question; address each point in order. When there are two points or more, open the answer to each " +
+  "with a blockquote of the user's note alone, cut to about ten words. Use blockquotes for nothing else: " +
+  "the interface shows them as the user's points.";
 
+// Worded as an instruction with no status to repeat: a result such as "Response displayed" was echoed
+// back to the user in their language, as a stray line under the interface.
 export const TOOL_RESULT_TEXT =
-  "Response displayed to the user for annotation. End your turn now without writing anything else: " +
-  "any text you add appears under the interface. The user will reply through it.";
+  "The user sees your response now. Your turn is over: do not write anything after this call, not even " +
+  "a sentence saying that the response is shown or open for annotation, in any language. Any text you " +
+  "write would appear as a stray line under the interface.";
 
 /**
  * True when the client announced the MCP Apps extension. The MIME types it lists are not checked:
