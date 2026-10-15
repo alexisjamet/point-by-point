@@ -18,7 +18,8 @@ support MCP Apps (claude.ai, Claude Desktop, the Claude mobile apps).
 
 ## Install
 
-The server is hosted once for everyone; there is nothing to install on your computer. You add two
+The server is hosted once for everyone (or [run your own copy](#run-your-own-copy-of-the-server));
+there is nothing to install on your computer. You add two
 things to your Claude account: a **connector** (the server) and a **skill** (which tells Claude to
 use it). You need both, in any order.
 
@@ -61,6 +62,26 @@ an interface:
   Team or Enterprise organisation an admin may have to allow them. Skills may also require code
   execution to be turned on in **Settings → Capabilities**.
 - **The interface is blank or shows an error.** Reload the page; your notes are kept as a draft.
+
+### Run your own copy of the server
+
+The hosted server sees the text of Claude's responses (see [Privacy and security](#privacy-and-security)).
+To keep it to yourself, deploy your own copy on a free [Cloudflare](https://dash.cloudflare.com/sign-up)
+account. You need Node 22 or later and a terminal:
+
+```sh
+git clone https://github.com/alexisjamet/point-by-point.git
+cd point-by-point
+npm install -g pnpm
+pnpm install
+pnpm --filter @point-by-point/server exec wrangler login   # opens Cloudflare in your browser
+pnpm run deploy
+```
+
+The last command prints your server's address, `https://point-by-point.<your-subdomain>.workers.dev`.
+On a new Cloudflare account you may first have to choose that subdomain, under **Workers & Pages**
+in the dashboard. Then follow the steps above with your address plus `/mcp` as the connector URL;
+the skill is the same. To get a new release later: `git pull && pnpm run deploy`.
 
 ### For an organisation
 
@@ -110,8 +131,16 @@ so you never end up with an invisible response.
 
 ## Privacy and security
 
-The text of Claude's responses goes through the server. These guarantees hold by construction and
-can be checked in this repository:
+The text of Claude's responses goes through the server, and so do your notes whenever Claude quotes
+them back. Your notes themselves go from the interface to the conversation through the host, not
+through the server.
+
+The guarantees below hold for the code in this repository. The hosted server
+(`point-by-point.brols.workers.dev`) is run by the author, and nothing lets you check that it runs
+this code: using it means trusting the author, as you trust Anthropic with the conversation itself.
+To trust no one but Cloudflare, [run your own copy](#run-your-own-copy-of-the-server).
+
+What the code guarantees:
 
 - **No storage, no content logs.** No KV, D1, R2 or Durable Objects. The Worker logs errors only,
   never the markdown.
