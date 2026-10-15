@@ -67,21 +67,6 @@ an interface:
 A Team or Enterprise admin adds the plugin from this repository to the organisation's plugin
 catalogue; skill and connector reach everyone at once.
 
-### Claude Code
-
-Claude Code's terminal does not display interfaces: there the tool stays hidden and Claude answers
-normally. Install the plugin there only if you use Claude Code in a host that renders interfaces.
-
-```sh
-claude plugin marketplace add alexisjamet/point-by-point
-claude plugin install point-by-point@point-by-point
-```
-
-Or in one command: `claude plugin install point-by-point --marketplace alexisjamet/point-by-point`.
-Inside a Claude Code session, the same commands exist as `/plugin marketplace add …` and
-`/plugin install …`. To get a new release: `claude plugin update point-by-point@point-by-point`.
-This installs the skill and the connector together.
-
 ### Anthropic's plugin directory
 
 Planned once the v1 is stable, through the
