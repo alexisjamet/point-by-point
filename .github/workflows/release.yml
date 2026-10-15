@@ -37,14 +37,27 @@ jobs:
         run: pnpm --filter @point-by-point/ui exec playwright install --with-deps chromium
       - name: Interface tests
         run: pnpm e2e
+      # The Cloudflare token only reaches the deploy step, never the install or build scripts.
+      - name: Check for deploy credentials
+        id: credentials
+        run: echo "present=${{ secrets.CLOUDFLARE_API_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
       - name: Deploy the Worker
+        if: steps.credentials.outputs.present == 'true'
         run: pnpm --filter @point-by-point/server exec wrangler deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Report the skipped deploy
+        if: steps.credentials.outputs.present != 'true'
+        run: echo "::warning::CLOUDFLARE_API_TOKEN is not set, so the Worker was not deployed. Deploy it with 'pnpm run deploy'."
       - name: Package the skill
         run: cd plugin/skills && zip -r "$GITHUB_WORKSPACE/point-by-point-skill.zip" point-by-point
       - name: Publish the GitHub release
-        run: gh release create "$GITHUB_REF_NAME" point-by-point-skill.zip --title "$GITHUB_REF_NAME" --generate-notes
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" point-by-point-skill.zip --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" point-by-point-skill.zip --title "$GITHUB_REF_NAME" --generate-notes
+          fi
         env:
           GH_TOKEN: ${{ github.token }}

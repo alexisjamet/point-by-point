@@ -71,9 +71,10 @@ render interfaces.
 ### claude.ai, for yourself
 
 1. **Settings → Connectors → Add custom connector**, paste the server URL.
-2. Download `point-by-point-skill.zip` from the
-   [latest release](https://github.com/alexisjamet/point-by-point/releases/latest), then upload it
-   in **Settings → Capabilities → Skills**.
+2. Download
+   [`point-by-point-skill.zip`](https://github.com/alexisjamet/point-by-point/releases/latest/download/point-by-point-skill.zip)
+   (attached to the [latest release](https://github.com/alexisjamet/point-by-point/releases/latest)),
+   then upload it in **Settings → Capabilities → Skills**.
 
 The connector and the skill then apply on claude.ai, Claude Desktop and the mobile apps. Menu names
 move from time to time; look for "Connectors" and "Skills" in the settings.
@@ -163,7 +164,9 @@ Bump `version` in `package.json`, `plugin/.claude-plugin/plugin.json` and
 `.claude-plugin/marketplace.json`, then push a `v<version>` tag. The release workflow runs every
 check, builds the interface under its versioned URI (a new URI per release, so no host serves a
 stale cached interface), deploys the Worker and attaches the skill archive to the GitHub release.
-It needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets.
+Deploying needs the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets;
+without them the release is still published, the deploy step is skipped with a warning, and the
+Worker is deployed by hand with `pnpm run deploy`.
 
 ## License
 
