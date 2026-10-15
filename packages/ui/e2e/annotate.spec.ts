@@ -128,6 +128,11 @@ test("removing a note clears the highlight", async ({ page }) => {
   const frame = await mount(page);
   const sentence = frame.locator(".phrase", { hasText: "Watch the error rate." });
   await sentence.click();
+  // Remove is the cross in the note's top right corner.
+  const note = await frame.locator(".note").boundingBox();
+  const cross = await frame.locator(".note-remove").boundingBox();
+  expect(cross!.x + cross!.width).toBeGreaterThan(note!.x + note!.width - 16);
+  expect(cross!.y).toBeLessThan(note!.y + 16);
   await frame.locator(".note-remove").click();
   await expect(frame.locator(".note")).toHaveCount(0);
   await expect(sentence).not.toHaveClass(/annotated/);
@@ -201,6 +206,8 @@ test("speaks French when the host does", async ({ page }) => {
   await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
   await expect(frame.locator(".note textarea")).toHaveAttribute("placeholder", "Ta réponse ou ta question");
   await expect(frame.locator(".note-remove")).toHaveText("Retirer");
+  await expect(frame.locator(".note-remove")).toHaveAttribute("title", "Retirer");
+  await expect(frame.locator(".note-done")).toHaveText("Valider");
 });
 
 test("renders streamed input and enables annotation only at the end", async ({ page }) => {
