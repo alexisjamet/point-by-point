@@ -98,6 +98,7 @@ function applyLabels() {
   remarkField.placeholder = s.remarkPlaceholder;
   remarkField.setAttribute("aria-label", s.remarkLabel);
   sendButton.textContent = s.send;
+  sendButton.title = s.send;
   copyButton.textContent = s.copy;
   $<HTMLButtonElement>("#remark-done").textContent = s.done;
   hintLabel.textContent = isTouch() ? s.hintTouch : s.hint;
