@@ -28,14 +28,11 @@ export function sanitizeQuote(quote: string): string {
  *
  *     `quoted passage 2` reply 2
  *
- *     general remark
- *
- * Annotations come in document order, empty ones are skipped, the general remark comes last.
+ * Annotations come in document order, empty ones are skipped.
  * Returns an empty string when there is nothing to send.
  */
 export function compose(
   annotations: readonly ComposableAnnotation[],
-  remark: string,
   options: ComposeOptions = {},
 ): string {
   const parts = annotations
@@ -43,9 +40,6 @@ export function compose(
     .filter((annotation) => annotation.text.trim() !== "")
     .sort((a, b) => a.order - b.order || a.index - b.index)
     .map((annotation) => `\`${sanitizeQuote(annotation.quote)}\` ${annotation.text.trim()}`);
-
-  const trimmedRemark = remark.trim();
-  if (trimmedRemark !== "") parts.push(trimmedRemark);
   if (parts.length === 0) return "";
 
   if (options.contextLine) parts.unshift(options.contextLine);

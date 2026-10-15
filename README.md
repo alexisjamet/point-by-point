@@ -4,11 +4,12 @@ Reply to Claude **point by point**. Claude shows its response in a read-only int
 sentence (or select any passage), write your reply or question under it, and send everything back
 in a single message.
 
-**1. Click a sentence or select a passage, and write under it.** Add a general remark if you like.
+**1. Click a sentence or select a passage, and write under it.** Pointing at a sentence highlights
+what a click will annotate.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/annotate-dark.png">
-  <img src="docs/images/annotate-light.png" width="720" alt="A response from Claude in the point-by-point interface: one sentence and one passage are highlighted, each with a note written under it, and a general remark above the Send button.">
+  <img src="docs/images/annotate-light.png" width="720" alt="A response from Claude in the point-by-point interface: one sentence and one passage are highlighted, each with a note written under it, and the Send button below.">
 </picture>
 
 **2. Send.** Your notes reach Claude as one message, in the order of the response:
@@ -17,8 +18,6 @@ in a single message.
 `First we migrate the database.` Back it up first.
 
 `switch traffic` When exactly? Not during business hours.
-
-Looks good overall.
 ```
 
 **3. Claude answers each point**, under a quote of your note, in a new interface you can annotate
@@ -130,7 +129,7 @@ so you never end up with an invisible response.
 
 - Click a sentence, or select a passage of more than two characters, to open a note under its
   paragraph. Click an annotated sentence again to return to its note.
-- An optional general remark at the bottom; a counter; empty notes are ignored.
+- Every note hangs on a sentence or a passage; a counter; empty notes are ignored.
 - Notes are sent in document order; backticks in quotes become apostrophes.
 - **Send** hands the message to the host. Claude Desktop places it in your message box under a
   caution banner it shows for every message an interactive app proposes; read it and press Enter

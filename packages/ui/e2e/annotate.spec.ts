@@ -35,15 +35,31 @@ test("annotates sentences by click and sends them in document order", async ({ p
   await page.keyboard.type("Back up first.");
   await expect(frame.locator("#count")).toHaveText("2 annotations");
 
-  await frame.locator("#remark").fill("Looks good overall.");
   await frame.locator("#send").click();
 
   await expect(frame.locator("#status")).toHaveText("Passed to the conversation");
   expect((await recorded(page)).messages).toEqual([
-    "`First we migrate the database.` Back up first.\n\n`Watch the error rate.` Which dashboard?\n\nLooks good overall.",
+    "`First we migrate the database.` Back up first.\n\n`Watch the error rate.` Which dashboard?",
   ]);
   await expect(frame.locator(".note")).toHaveCount(0);
-  await expect(frame.locator("#remark")).toHaveValue("");
+});
+
+test("has no general remark field: every note hangs on a passage", async ({ page }) => {
+  const frame = await mount(page);
+  await expect(frame.locator("#remark, .remark")).toHaveCount(0);
+  await expect(frame.locator("#hint")).toHaveText("Click a sentence or select a passage to annotate it.");
+});
+
+test("the sentence under the mouse gets the annotation's highlighter stroke, on all its spans", async ({ page }) => {
+  const frame = await mount(page);
+  const spans = frame.locator(".phrase[data-s='2']");
+  expect(await spans.count()).toBeGreaterThan(1); // split around the link
+  await spans.first().hover();
+  for (const span of await spans.all()) await expect(span).toHaveClass(/hovered/);
+  await expect(spans.first()).toHaveCSS("background-size", "100% 88%");
+  await frame.locator("h1").hover();
+  await expect(frame.locator(".phrase.hovered")).toHaveCount(0);
+  await expect(spans.first()).toHaveCSS("background-size", "0% 88%");
 });
 
 test("clicking an annotated sentence returns to its note without a duplicate", async ({ page }) => {
@@ -51,7 +67,7 @@ test("clicking an annotated sentence returns to its note without a duplicate", a
   const sentence = frame.locator(".phrase", { hasText: "Keep the old cluster" });
   await sentence.click();
   await page.keyboard.type("Why a week?");
-  await frame.locator("#remark").click();
+  await frame.locator("#hint").click();
   await sentence.click();
   await expect(frame.locator(".note")).toHaveCount(1);
   await expect(frame.locator(".note textarea")).toBeFocused();
@@ -137,18 +153,15 @@ test("restores drafts after a reload and clears them after sending", async ({ pa
   let frame = await mount(page);
   await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
   await page.keyboard.type("Draft reply");
-  await frame.locator("#remark").fill("Draft remark");
   await page.waitForTimeout(400);
 
   frame = await mount(page);
   await expect(frame.locator(".note textarea")).toHaveValue("Draft reply");
-  await expect(frame.locator("#remark")).toHaveValue("Draft remark");
   await frame.locator("#send").click();
   await expect(frame.locator("#status")).toBeVisible();
 
   frame = await mount(page);
   await expect(frame.locator(".note")).toHaveCount(0);
-  await expect(frame.locator("#remark")).toHaveValue("");
 });
 
 test("an earlier widget adds a context line", async ({ page }) => {
@@ -174,10 +187,11 @@ test("an earlier widget adds a context line", async ({ page }) => {
 
 test("offers a copy fallback when sending fails", async ({ page }) => {
   const frame = await mount(page, { failMessages: true });
-  await frame.locator("#remark").fill("Hello");
+  await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
+  await page.keyboard.type("Hello");
   await frame.locator("#send").click();
   await expect(frame.locator("#error")).toBeVisible();
-  await expect(frame.locator("#fallback-text")).toHaveValue("Hello");
+  await expect(frame.locator("#fallback-text")).toHaveValue("`Watch the error rate.` Hello");
   await expect(frame.locator("#copy")).toBeVisible();
 });
 
@@ -202,7 +216,8 @@ test("renders streamed input and enables annotation only at the end", async ({ p
 test("follows the dark theme and keeps fields at 16px", async ({ page }) => {
   const frame = await mount(page, { context: { theme: "dark" } });
   await expect(frame.locator("html")).toHaveAttribute("data-theme", "dark");
-  const size = await frame.locator("#remark").evaluate((el) => getComputedStyle(el).fontSize);
+  await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
+  const size = await frame.locator(".note textarea").evaluate((el) => getComputedStyle(el).fontSize);
   expect(parseFloat(size)).toBeGreaterThanOrEqual(16);
 });
 
@@ -254,13 +269,11 @@ test("restores the notes of the last send", async ({ page }) => {
   const frame = await mount(page);
   await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
   await page.keyboard.type("Which dashboard?");
-  await frame.locator("#remark").fill("Overall fine.");
   await frame.locator("#send").click();
   await expect(frame.locator(".note")).toHaveCount(0);
 
   await frame.getByRole("button", { name: "Restore notes" }).click();
   await expect(frame.locator(".note textarea")).toHaveValue("Which dashboard?");
-  await expect(frame.locator("#remark")).toHaveValue("Overall fine.");
   await expect(frame.locator("#count")).toHaveText("1 annotation");
   await expect(frame.getByRole("button", { name: "Restore notes" })).toBeHidden();
   await expect(frame.locator(".phrase", { hasText: "Watch the error rate." })).toHaveClass(/annotated/);

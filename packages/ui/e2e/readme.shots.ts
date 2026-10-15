@@ -21,9 +21,7 @@ Agreed: the migration now starts with a snapshot of the production database, kep
 
 The switch starts at 7 pm, after peak traffic, and each step waits for fifteen minutes of clean metrics.
 
-> Looks good overall.
-
-Thanks. I'll write the runbook next, with the rollback steps at the top.`;
+I'll write the runbook next, with the rollback steps at the top.`;
 
 // Close to the variables Claude passes to interfaces, and to its page background.
 const THEMES = {
@@ -102,8 +100,7 @@ for (const theme of ["light", "dark"] as const) {
     await selectPassage(frame, "switch traffic");
     await expect(frame.locator(".note")).toHaveCount(2);
     await frame.locator(".note textarea").last().fill("When exactly? Not during business hours.");
-    await frame.locator("#remark").fill("Looks good overall.");
-    await frame.locator("#remark").blur();
+    await frame.locator(".note textarea").last().blur();
     await settle(page);
     await page.screenshot({ path: `${OUT}annotate-${theme}.png`, fullPage: true });
   });
