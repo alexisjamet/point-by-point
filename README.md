@@ -129,7 +129,9 @@ so you never end up with an invisible response.
 
 - Click a sentence, or select a passage of more than two characters, to open a note under its
   paragraph. Click an annotated sentence again to return to its note.
-- Every note hangs on a sentence or a passage; a counter; empty notes are ignored.
+- Every note hangs on a sentence or a passage; empty notes are ignored. **Send** says how many notes
+  it sends ("Send 2 annotations") and stays disabled until a note has text; the hint goes away once
+  one does.
 - Notes are sent in document order; backticks in quotes become apostrophes.
 - **Send** hands the message to the host. Claude Desktop places it in your message box under a
   caution banner it shows for every message an interactive app proposes; read it and press Enter
