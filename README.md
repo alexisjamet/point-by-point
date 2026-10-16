@@ -4,6 +4,27 @@ Reply to Claude or ChatGPT **point by point**. The assistant shows its response 
 sentence (or select any passage), write your reply or question under it, and send everything back
 in a single message.
 
+**Contents**
+
+- [Install](#install)
+  - [In Claude, as a plugin (recommended)](#in-claude-as-a-plugin-recommended)
+  - [In Claude, without the plugin](#in-claude-without-the-plugin)
+  - [In ChatGPT](#in-chatgpt)
+  - [Try it](#try-it)
+  - [If it doesn't work](#if-it-doesnt-work)
+  - [Run your own copy of the server](#run-your-own-copy-of-the-server)
+  - [For an organisation](#for-an-organisation)
+  - [Anthropic's plugin directory](#anthropics-plugin-directory)
+- [How it works](#how-it-works)
+  - [What the interface does](#what-the-interface-does)
+- [Privacy and security](#privacy-and-security)
+- [Development](#development)
+  - [Testing in claude.ai](#testing-in-claudeai)
+  - [Mobile diagnostic](#mobile-diagnostic)
+  - [Deploy](#deploy)
+  - [Release](#release)
+- [License](#license)
+
 **1. Click a sentence or select a passage, and write under it.** Pointing at a sentence highlights
 what a click will annotate.
 
