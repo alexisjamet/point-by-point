@@ -424,7 +424,6 @@ li > .note-slot {
 }
 
 .note-quote {
-  margin: 0 0 10px;
   padding-left: 10px;
   border-left: 2px solid var(--pbp-line-strong);
   color: var(--pbp-muted);
@@ -609,13 +608,14 @@ button.note-newchat:hover {
   }
 }
 
-/* The quote keeps clear of the new conversation button and the cross. */
-.note-quote {
-  margin-right: 52px;
+/* The quote keeps clear of the new conversation button and the cross. The note sits inside the
+   response, so the selector must outweigh `.response p`, whose margin would otherwise win. */
+.note > .note-quote {
+  margin: 0 52px 10px 0;
 }
 
 @media (pointer: coarse) {
-  .note-quote {
+  .note > .note-quote {
     margin-right: 64px;
   }
 }
