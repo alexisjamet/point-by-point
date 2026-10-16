@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "point-by-point": {
+      "type": "streamable-http",
+      "url": "https://point-by-point.brols.workers.dev/mcp"
+    }
+  }
+}

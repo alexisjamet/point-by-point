@@ -21,7 +21,7 @@ jobs:
       - name: Check the tag matches the versions
         run: |
           version="${GITHUB_REF_NAME#v}"
-          for file in package.json plugin/.claude-plugin/plugin.json; do
+          for file in package.json plugin/.claude-plugin/plugin.json plugin/plugin.json; do
             actual=$(node -p "require('./$file').version")
             [ "$actual" = "$version" ] || { echo "$file is $actual, tag is $version"; exit 1; }
           done

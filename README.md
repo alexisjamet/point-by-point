@@ -1,6 +1,6 @@
 # point-by-point
 
-Reply to Claude **point by point**. Claude shows its response in a read-only interface; you click any
+Reply to Claude or ChatGPT **point by point**. The assistant shows its response in a read-only interface; you click any
 sentence (or select any passage), write your reply or question under it, and send everything back
 in a single message.
 
@@ -28,19 +28,21 @@ again.
   <img src="docs/images/answer-light.png" width="720" alt="Claude's next response: each of the user's notes is shown as a bubble, followed by Claude's answer to it.">
 </picture>
 
-The interface follows Claude's light or dark theme (the images above follow yours).
+The interface follows the app's light or dark theme (the images above follow yours).
 
 It is an [MCP App](https://claude.com/blog/interactive-tools-in-claude): an MCP server that declares
 one tool, `annotate_response`, whose interface is rendered inline in the conversation by hosts that
-support MCP Apps (claude.ai, Claude Desktop, the Claude mobile apps).
+support MCP Apps (claude.ai, Claude Desktop, the Claude mobile apps, and ChatGPT on the web and in
+its desktop app).
 
 ## Install
 
 The server is hosted once for everyone (or [run your own copy](#run-your-own-copy-of-the-server));
-there is nothing to install on your computer. Do this once on [claude.ai](https://claude.ai) in a
-browser; it then applies everywhere you use Claude with that account (web, desktop and mobile apps).
+there is nothing to install on your computer. Add it once to your account, in a browser: it then
+applies everywhere you use that account (web, desktop and mobile apps). For Claude, do it on
+[claude.ai](https://claude.ai); for ChatGPT, see [In ChatGPT](#in-chatgpt).
 
-### As a plugin (recommended)
+### In Claude, as a plugin (recommended)
 
 The plugin brings the **connector** (the server) and the **skill** (which tells Claude to use it)
 together, and keeps the skill up to date with each release.
@@ -67,7 +69,7 @@ To get each release without doing anything, turn on **Sync automatically** for t
 If you installed the connector or the skill by hand before, remove them from **Customize →
 Connectors** and **Customize → Skills**, so they do not appear twice.
 
-### Without the plugin
+### In Claude, without the plugin
 
 If your plan or organisation does not offer plugins, add the connector by hand: it tells Claude how
 to use it on its own.
@@ -88,29 +90,60 @@ to use it on its own.
 
 Menu names move from time to time; look for "Plugins", "Connectors" and "Skills" in the settings.
 
+### In ChatGPT
+
+ChatGPT shows MCP Apps on the web and in its desktop app. Add the server once as a custom MCP
+server: it carries its own instructions, so no skill is needed.
+
+1. In ChatGPT, open **Plugins** ([chatgpt.com/plugins](https://chatgpt.com/plugins)), select **+**,
+   then **Add custom MCP server**.
+2. Name it `point-by-point`. Under **Connection**, choose **Public endpoint** and paste:
+
+   ```
+   https://point-by-point.brols.workers.dev/mcp
+   ```
+
+3. Leave authentication off: the server needs no account. Review the warning, select **I understand
+   and want to continue**, then **Create as a plugin**.
+4. In a new chat, type `@` and pick **point-by-point**.
+
+If **Add custom MCP server** is missing, turn on **Developer mode** in ChatGPT's settings (under
+**Apps & Connectors → Advanced**, or **Security** on some accounts). Custom MCP servers depend on
+your plan, and in a Business, Enterprise or Edu workspace an admin may have to allow them.
+
+**Experimental: with the skill, in the ChatGPT desktop app.** This repository is also a plugin
+marketplace in the portable format that ChatGPT's desktop app and Codex read. With the
+[Codex CLI](https://developers.openai.com/codex) installed, run
+`codex plugin marketplace add alexisjamet/point-by-point`, restart the ChatGPT desktop app, and
+install **point-by-point** from the Plugins Directory, under that marketplace.
+
 ### Try it
 
-Start a **new conversation** and ask anything. Instead of plain text, Claude's answer appears in
-an interface:
+Start a **new conversation** and ask anything. Instead of plain text, the answer appears in an
+interface:
 
 1. Click a sentence (or select a passage) and type your reply under it. Repeat for as many
    sentences as you like.
 2. Press **Send**. On Claude Desktop the message lands in your message box first: press Enter to
    send it.
-3. Claude answers each of your points, in a new interface.
+3. The assistant answers each of your points, in a new interface.
 
 ### If it doesn't work
 
 - **Claude answers in plain text.** Check that the connector is connected (the plugin's
   **Connectors** tab must not say **Not added**, or **Customize → Connectors**) and turned on for
   this conversation (the tools menu in the message box), then start a new conversation. With the
-  plugin or the skill, Claude says so in its first response when the connector is missing. Without the plugin, if it still happens, add the
-  skill, or check that it is turned on in **Customize → Skills**.
+  plugin or the skill, Claude says so in its first response when the connector is missing. Without
+  the plugin, if it still happens, add the skill, or check that it is turned on in
+  **Customize → Skills**.
+- **ChatGPT answers in plain text.** Pick **point-by-point** with `@` in a new chat. After a new
+  release, open the plugin in **Plugins** and select **Refresh**, so ChatGPT reads the current tool.
 - **The connector says it has no tools.** Open the connector in the tools menu and refresh its tool
   list. Releases before 0.20.1 could leave claude.ai with an empty list until that refresh.
 - **No "Plugins", "Skills" or "Add custom connector" in the settings.** These depend on your plan,
   and in a Team or Enterprise organisation an admin may have to allow them. Skills may also require
-  code execution to be turned on in **Settings → Capabilities**.
+  code execution to be turned on in **Settings → Capabilities**. In ChatGPT, custom MCP servers
+  need **Developer mode** (see [In ChatGPT](#in-chatgpt)).
 - **The interface is blank or shows an error.** Reload the page; your notes are kept as a draft.
 
 ### Run your own copy of the server
@@ -130,7 +163,7 @@ pnpm run deploy
 
 The last command prints your server's address, `https://point-by-point.<your-subdomain>.workers.dev`.
 On a new Cloudflare account you may first have to choose that subdomain, under **Workers & Pages**
-in the dashboard. Then follow [Without the plugin](#without-the-plugin) with your address plus `/mcp`
+in the dashboard. Then follow [In Claude, without the plugin](#in-claude-without-the-plugin) (or [In ChatGPT](#in-chatgpt)) with your address plus `/mcp`
 as the connector URL; the skill is the same. To get a new release later: `git pull && pnpm run deploy`.
 
 ### For an organisation
@@ -152,10 +185,11 @@ Planned once the v1 is stable, through the
 4. **Send** injects the composed message into the conversation as if you had typed it.
 5. Claude reads the quotes, answers each point, and responds through the tool again.
 
-The tool is only declared to clients that announce MCP Apps support
-(`io.modelcontextprotocol/ui` with `text/html;profile=mcp-app`). Anywhere else — Claude Code in a
-terminal, the API without an MCP Apps host — the tool does not exist and Claude answers normally,
-so you never end up with an invisible response.
+The tool is declared to every client. Clients that render MCP Apps get the interface: those that
+announce the extension (`io.modelcontextprotocol/ui`), and ChatGPT, recognised by the `openai/`
+hints it adds to its requests. Anywhere else — Claude Code in a terminal, the API without an MCP
+Apps host — the tool answers that the interface cannot be shown, and the model writes its response
+in the chat, so you never end up with an invisible response.
 
 ### What the interface does
 
@@ -220,7 +254,9 @@ TypeScript monorepo, pnpm workspaces, Node 22+.
 packages/
   server/   Cloudflare Worker: MCP server (tool + interface resource)
   ui/       the annotation interface, built to a single HTML file
-plugin/     Claude plugin: .claude-plugin/plugin.json, .mcp.json, skills/point-by-point
+plugin/     the plugin: skills/point-by-point, plus two manifests for the same plugin:
+            .claude-plugin/plugin.json + .mcp.json (Claude),
+            plugin.json + mcp.json (portable Agent Plugins format: ChatGPT, Codex)
 .claude-plugin/marketplace.json   this repository as a plugin marketplace
 ```
 
@@ -265,7 +301,7 @@ A fork deployed to another Cloudflare account gets its own URL: put it (with `/m
 
 ### Release
 
-Bump `version` in `package.json`, `plugin/.claude-plugin/plugin.json` and
+Bump `version` in `package.json`, `plugin/.claude-plugin/plugin.json`, `plugin/plugin.json` and
 `.claude-plugin/marketplace.json`, then push a `v<version>` tag. The release workflow runs every
 check, builds the interface under its versioned URI (a new URI per release, so no host serves a
 stale cached interface), deploys the Worker and attaches the skill archive to the GitHub release.

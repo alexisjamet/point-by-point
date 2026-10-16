@@ -83,7 +83,16 @@ type JsonRpcMessage = { method?: unknown; params?: { capabilities?: unknown; _me
 export type UiSupport = { ui: boolean; reason: string };
 
 /**
+ * True when the request carries ChatGPT's hints, such as `openai/locale`, which it adds to the `_meta`
+ * of initialize and of tool calls. ChatGPT renders MCP Apps but may not announce the extension.
+ */
+function fromChatGpt(meta: Record<string, unknown> | undefined): boolean {
+  return meta !== undefined && Object.keys(meta).some((key) => key.startsWith("openai/"));
+}
+
+/**
  * Reads the client's UI support from one HTTP request, without any server-side state:
+ * - ChatGPT is recognised by the `openai/` hints in `_meta`, whatever it announces;
  * - 2026-07-28 requests carry the client capabilities in their `_meta` envelope;
  * - a 2025 `initialize` carries them in its params;
  * - later 2025 requests echo the session id handed out at `initialize`, which encodes the answer.
@@ -91,6 +100,7 @@ export type UiSupport = { ui: boolean; reason: string };
  */
 export function uiSupportFromRequest(body: unknown, sessionId: string | null): UiSupport {
   const message = (Array.isArray(body) ? body[0] : body) as JsonRpcMessage | undefined;
+  if (fromChatGpt(message?.params?._meta)) return { ui: true, reason: "ChatGPT hints in _meta" };
   const envelope = message?.params?._meta?.[CLIENT_CAPABILITIES_META_KEY];
   if (envelope && typeof envelope === "object") {
     return supportsUi(envelope as ClientCapabilities)

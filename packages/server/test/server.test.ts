@@ -176,6 +176,25 @@ describe("interface decisions", () => {
     expect(line).not.toContain("conversation");
   });
 
+  it("shows the interface to ChatGPT even when it does not announce the ui extension", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const chatGpt = { _meta: { "openai/locale": "fr-FR" } };
+    await post({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "openai-mcp", version: "1" }, ...chatGpt },
+    });
+    expect(log.mock.calls).toEqual([["2025 POST initialize, protocol none, status 200, interface yes: ChatGPT hints in _meta"]]);
+
+    // A tool call on a session opened without the extension still gets the interface.
+    const reply = await post(
+      { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: TOOL_NAME, arguments: { markdown: "Hi." }, ...chatGpt } },
+      { "mcp-protocol-version": "2025-06-18", "mcp-session-id": "plain.0" },
+    );
+    expect(reply.result.content).toEqual([{ type: "text", text: TOOL_RESULT_TEXT }]);
+  });
+
   it("logs nothing for a client that renders the interface", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const reply = await modernToolsList(UI_CAPABILITIES);

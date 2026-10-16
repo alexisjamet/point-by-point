@@ -76,9 +76,11 @@ be listed only once found.
 
 - **`annotate_response` is missing.** The point-by-point connector is not connected, or turned off
   for this conversation. Open your first response with one sentence saying so, in the user's
-  language, and how to fix it: in Claude's settings, **Customize → Plugins → point-by-point →
-  Connectors → Connect** (without the plugin, **Settings → Connectors → Add custom connector**),
-  check that it is turned on in the chat's tools menu, then start a new conversation. Then answer
-  normally in the chat. Say it once per conversation, not in every response.
+  language, and how to fix it. In Claude: **Customize → Plugins → point-by-point → Connectors →
+  Connect** (without the plugin, **Settings → Connectors → Add custom connector**), and check that it
+  is turned on in the chat's tools menu. In ChatGPT: open **Plugins**, check that point-by-point's
+  MCP server is connected, and pick point-by-point with `@` in the chat. Either way, start a new
+  conversation afterwards. Then answer normally in the chat. Say it once per conversation, not in
+  every response.
 - **`annotate_response` answers that this client cannot show the interface.** Answer normally in
   the chat for the rest of the conversation, without mentioning the tool.
