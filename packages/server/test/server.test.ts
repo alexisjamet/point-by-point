@@ -1,7 +1,7 @@
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import worker from "../src/index";
-import { MAX_MARKDOWN_LENGTH, TOOL_NAME, TOOL_RESULT_TEXT } from "../src/server";
+import { MAX_MARKDOWN_LENGTH, SERVER_INSTRUCTIONS, TOOL_NAME, TOOL_RESULT_TEXT } from "../src/server";
 import { UI_URI } from "../src/ui.generated";
 
 const UI_CAPABILITIES = { extensions: { "io.modelcontextprotocol/ui": { mimeTypes: ["text/html;profile=mcp-app"] } } };
@@ -38,6 +38,15 @@ describe.each<Era>(["legacy", "modern"])("%s protocol", (era) => {
     const { tools } = await client.listTools();
     expect(tools.map((tool) => tool.name)).not.toContain(TOOL_NAME);
     await client.close();
+  });
+
+  it("gives the skill's rules as instructions only to a client that renders interfaces", async () => {
+    const withUi = await connect({ ui: true, era });
+    expect(withUi.getInstructions()).toBe(SERVER_INSTRUCTIONS);
+    await withUi.close();
+    const withoutUi = await connect({ ui: false, era });
+    expect(withoutUi.getInstructions()).toBeUndefined();
+    await withoutUi.close();
   });
 
   it("exposes the tool when the ui extension lists no MIME type", async () => {

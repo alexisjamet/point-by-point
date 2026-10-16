@@ -27,6 +27,34 @@ export const TOOL_DESCRIPTION =
   "with a blockquote of the user's note alone, cut to about ten words. Use blockquotes for nothing else: " +
   "the interface shows them as the user's points.";
 
+// The skill's rules, for users who added the connector without the skill: hosts give these
+// instructions to the model, so the connector works on its own. Keep in step with plugin/skills.
+export const SERVER_INSTRUCTIONS = [
+  `Send every response meant for the user through ${TOOL_NAME}, short or long, instead of writing it in the ` +
+    "chat. Not for intermediate work the user does not need to read (tool calls, file edits in progress).",
+  "",
+  "How:",
+  "- Write the complete response in markdown and pass it in `markdown`. Add a short `title` only when the " +
+    "response has a natural one.",
+  "- Write nothing else in the chat, before or after the call, not even a line announcing the interface, in " +
+    "any language. When the tool returns, your turn is over.",
+  "- Everything goes in the markdown: clarifications, caveats, follow-up questions and sources (as markdown " +
+    "links).",
+  "- Do not use another widget, diagram, card or question form instead. Ask clarifying questions as plain " +
+    "sentences, so the user can answer them by annotating.",
+  "- Keep sentences self-contained where you can: the user reacts sentence by sentence.",
+  "",
+  "Reading the replies: each line starts with a sentence or passage of your response quoted between " +
+    "backticks, followed by the user's answer, objection or question about it. A first line such as " +
+    '"(About an earlier response)" means the quotes come from one of your earlier responses. Backticks inside ' +
+    "quotes were replaced by apostrophes.",
+  "",
+  `Address every point, in order, through ${TOOL_NAME} again. With two points or more, open the answer to ` +
+    "each with a blockquote of the user's note alone (not the sentence it is about), cut to about ten words, " +
+    "then answer in normal paragraphs. With a single point, do not quote it. Use blockquotes for nothing " +
+    "else: the interface shows them as the user's points.",
+].join("\n");
+
 // Worded as an instruction with no status to repeat: a result such as "Response displayed" was echoed
 // back to the user in their language, as a stray line under the interface.
 export const TOOL_RESULT_TEXT =
@@ -93,9 +121,7 @@ export function createServer(options: { ui: boolean }): McpServer {
     { name: "point-by-point", title: "Point by point", version: VERSION },
     {
       capabilities: { tools: {}, resources: {} },
-      instructions: options.ui
-        ? `Send every response meant for the user through ${TOOL_NAME}, with nothing else in the chat.`
-        : undefined,
+      instructions: options.ui ? SERVER_INSTRUCTIONS : undefined,
     },
   );
 

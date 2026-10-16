@@ -37,9 +37,9 @@ support MCP Apps (claude.ai, Claude Desktop, the Claude mobile apps).
 ## Install
 
 The server is hosted once for everyone (or [run your own copy](#run-your-own-copy-of-the-server));
-there is nothing to install on your computer. You add two
-things to your Claude account: a **connector** (the server) and a **skill** (which tells Claude to
-use it). You need both, in any order.
+there is nothing to install on your computer. You add a **connector** (the server) to your Claude
+account; it tells Claude how to use it on its own. A **skill** with the same rules is optional: it
+makes Claude follow them more reliably.
 
 ### claude.ai, Claude Desktop and the mobile apps
 
@@ -53,7 +53,7 @@ Claude with that account.
    https://point-by-point.brols.workers.dev/mcp
    ```
 
-2. **Add the skill.** Download
+2. **Optional: add the skill.** Download
    [`point-by-point-skill.zip`](https://github.com/alexisjamet/point-by-point/releases/latest/download/point-by-point-skill.zip),
    then upload it in **Settings → Capabilities → Skills**. Upload the `.zip` as it is: do not
    unzip it (if your browser unzipped it on its own, zip the `point-by-point` folder again).
@@ -74,8 +74,8 @@ an interface:
 ### If it doesn't work
 
 - **Claude answers in plain text.** Check that the connector is turned on for this conversation
-  (the tools menu in the message box), and that the skill is turned on in **Settings → Capabilities
-  → Skills**. Then start a new conversation.
+  (the tools menu in the message box), then start a new conversation. If it still happens, add the
+  skill (step 2), or check that it is turned on in **Settings → Capabilities → Skills**.
 - **No "Skills" or "Add custom connector" in the settings.** These depend on your plan, and in a
   Team or Enterprise organisation an admin may have to allow them. Skills may also require code
   execution to be turned on in **Settings → Capabilities**.
