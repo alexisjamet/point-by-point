@@ -1,6 +1,6 @@
 ---
 name: point-by-point
-description: Send every response meant for the user through the annotate_response tool, so they can annotate any sentence and reply point by point in one message. Use for all user-facing responses, including short ones, whenever the annotate_response tool is available. Also explains how to read the annotated replies that come back.
+description: Send every response meant for the user through the annotate_response tool, so they can annotate any sentence and reply point by point in one message. Use for all user-facing responses, including short ones, whenever the annotate_response tool is available; when it is missing, tells the user how to connect it. Also explains how to read the annotated replies that come back.
 ---
 
 # Point by point
@@ -71,6 +71,14 @@ Use blockquotes only for this: the interface shows them as the user's points.
 
 ## When the tool is not available
 
-If `annotate_response` is not in your tools, or it answers that this client cannot show the
-interface, answer normally in the chat for the rest of the conversation. Never mention the tool to
-the user in that case.
+If your tools can be searched or loaded on demand, look for `annotate_response` there first: it may
+be listed only once found.
+
+- **`annotate_response` is missing.** The point-by-point connector is not connected, or turned off
+  for this conversation. Open your first response with one sentence saying so, in the user's
+  language, and how to fix it: in Claude's settings, **Customize → Plugins → point-by-point →
+  Connectors → Connect** (without the plugin, **Settings → Connectors → Add custom connector**),
+  check that it is turned on in the chat's tools menu, then start a new conversation. Then answer
+  normally in the chat. Say it once per conversation, not in every response.
+- **`annotate_response` answers that this client cannot show the interface.** Answer normally in
+  the chat for the rest of the conversation, without mentioning the tool.

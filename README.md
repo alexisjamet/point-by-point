@@ -101,9 +101,10 @@ an interface:
 
 ### If it doesn't work
 
-- **Claude answers in plain text.** Check that the connector is added (the plugin's **Connectors**
-  tab, or **Customize → Connectors**) and turned on for this conversation (the tools menu in the
-  message box), then start a new conversation. Without the plugin, if it still happens, add the
+- **Claude answers in plain text.** Check that the connector is connected (the plugin's
+  **Connectors** tab must not say **Not added**, or **Customize → Connectors**) and turned on for
+  this conversation (the tools menu in the message box), then start a new conversation. With the
+  plugin or the skill, Claude says so in its first response when the connector is missing. Without the plugin, if it still happens, add the
   skill, or check that it is turned on in **Customize → Skills**.
 - **The connector says it has no tools.** Open the connector in the tools menu and refresh its tool
   list. Releases before 0.20.1 could leave claude.ai with an empty list until that refresh.
