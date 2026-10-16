@@ -52,8 +52,15 @@ together, and keeps the skill up to date with each release.
    ```
 
 2. Install the **point-by-point** plugin, which now appears among the plugins.
-3. Open the plugin, go to its **Connectors** tab and **Add** the `point-by-point` connector:
-   installing a plugin does not add its connector by itself.
+3. **Connect the connector.** Installing the plugin does not connect it: until you do, Claude
+   has no `annotate_response` tool and answers in the chat as usual, without saying why. Open
+   the plugin, go to its **Connectors** tab, where `point-by-point` shows **Not added**, and click
+   **Connect**.
+
+   <img src="docs/images/plugin-connect.png" width="720" alt="The point-by-point plugin page, Connectors tab: the point-by-point connector shows Not added, with a Connect button on its right.">
+
+4. Check it in a new chat: `point-by-point` appears, turned on, in the chat's tools menu.
+   **Try in chat** only uses point-by-point once the connector is connected.
 
 To get each release without doing anything, turn on **Sync automatically** for the marketplace.
 
@@ -94,9 +101,10 @@ an interface:
 
 ### If it doesn't work
 
-- **Claude answers in plain text.** Check that the connector is added (the plugin's **Connectors**
-  tab, or **Customize → Connectors**) and turned on for this conversation (the tools menu in the
-  message box), then start a new conversation. Without the plugin, if it still happens, add the
+- **Claude answers in plain text.** Check that the connector is connected (the plugin's
+  **Connectors** tab must not say **Not added**, or **Customize → Connectors**) and turned on for
+  this conversation (the tools menu in the message box), then start a new conversation. With the
+  plugin or the skill, Claude says so in its first response when the connector is missing. Without the plugin, if it still happens, add the
   skill, or check that it is turned on in **Customize → Skills**.
 - **The connector says it has no tools.** Open the connector in the tools menu and refresh its tool
   list. Releases before 0.20.1 could leave claude.ai with an empty list until that refresh.
