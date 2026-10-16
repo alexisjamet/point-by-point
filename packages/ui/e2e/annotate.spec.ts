@@ -33,7 +33,7 @@ test("annotates sentences by click, inserts them in document order, and keeps th
 
   await frame.locator(".phrase", { hasText: "First we migrate the database." }).click();
   await page.keyboard.type("Back up first.");
-  await expect(frame.locator("#send")).toHaveText("Insert 2 annotations into the message");
+  await expect(frame.locator("#send")).toHaveText("Draft my reply");
 
   await frame.locator("#send").click();
 
@@ -44,7 +44,7 @@ test("annotates sentences by click, inserts them in document order, and keeps th
   await expect(frame.locator(".note textarea").first()).toHaveValue("Back up first.");
   await expect(frame.locator(".note textarea").last()).toHaveValue("Which dashboard?");
   await expect(frame.locator(".phrase", { hasText: "Watch the error rate." })).toHaveClass(/annotated/);
-  await expect(frame.locator("#send")).toHaveText("Insert 2 annotations into the message");
+  await expect(frame.locator("#send")).toHaveText("Draft my reply");
 });
 
 test("in ChatGPT, the button sends", async ({ page }) => {
@@ -282,10 +282,10 @@ test("speaks French when the host does", async ({ page }) => {
   await expect(frame.locator(".note-remove")).toHaveAttribute("title", "Retirer");
   await expect(frame.locator(".note-done")).toHaveText("Valider");
   await page.keyboard.type("Pourquoi ?");
-  await expect(frame.locator("#send")).toHaveText("Insérer dans le message");
+  await expect(frame.locator("#send")).toHaveText("Préparer ma réponse");
   await frame.locator(".phrase", { hasText: "Keep the old cluster" }).click();
   await page.keyboard.type("Combien ?");
-  await expect(frame.locator("#send")).toHaveText("Insérer 2 annotations dans le message");
+  await expect(frame.locator("#send")).toHaveText("Préparer ma réponse");
 });
 
 test("renders streamed input and enables annotation only at the end", async ({ page }) => {

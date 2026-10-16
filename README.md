@@ -33,7 +33,7 @@ what a click will annotate.
   <img src="docs/images/annotate-light.png" width="720" alt="A response from Claude in the point-by-point interface: one sentence and one passage are highlighted, each with a note written under it, and the Send button below.">
 </picture>
 
-**2. Insert them into the message.** Your notes go to your message box as one message, in the
+**2. Draft your reply.** Your notes go to your message box as one message, in the
 order of the response, and stay in place in the interface:
 
 ```
@@ -146,7 +146,7 @@ interface:
 
 1. Click a sentence (or select a passage) and type your reply under it. Repeat for as many
    sentences as you like.
-2. Press **Insert into the message** (in ChatGPT, **Send**). In Claude the message lands in your
+2. Press **Draft my reply** (in ChatGPT, **Send**). In Claude the message lands in your
    message box: press Enter to send it.
 3. The assistant answers each of your points, in a new interface.
 
@@ -219,8 +219,8 @@ in the chat, so you never end up with an invisible response.
 - Click a sentence, or select a passage of more than two characters, to open a note under its
   paragraph. Click an annotated sentence again to return to its note.
 - Every note hangs on a sentence or a passage; empty notes are ignored. The button only shows once a
-  note has text, and then the hint goes away; from two notes on it says how many it hands over
-  ("Insert 2 annotations into the message", or "Send 2 annotations" in ChatGPT).
+  note has text, and then the hint goes away. In ChatGPT, from two notes on, it says how many it
+  sends ("Send 2 annotations").
 - Notes are sent in document order; backticks in quotes become apostrophes.
 - The bubble icon in a note's corner starts a **new conversation** about that passage: it copies
   the passage and your note to your clipboard, and on claude.ai and in ChatGPT it also opens a new
@@ -231,7 +231,7 @@ in the chat, so you never end up with an invisible response.
   start a new conversation and paste.
 - The button hands the message to the host. Claude places it in your message box (Claude Desktop
   under a caution banner it shows for every message an interactive app proposes), so the button
-  reads **Insert into the message**; read it and press Enter to send it. ChatGPT sends it, so the
+  reads **Draft my reply**; read it and press Enter to send it. ChatGPT sends it, so the
   button reads **Send**.
 - The notes stay in place after a send, and are kept with the response's draft: the response keeps
   them as a record, and if you discard the message, the button hands it over again. A mark says
