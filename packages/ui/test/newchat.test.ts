@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_URL_LENGTH, chatAppFor, newChatPrompt, newChatUrl } from "../src/newchat";
+import { MAX_URL_LENGTH, chatAppFor, newChatModeFor, newChatPrompt, newChatUrl } from "../src/newchat";
 
 const intro = "About this passage:";
 
@@ -14,6 +14,21 @@ describe("chatAppFor", () => {
     expect(chatAppFor("openai-apps", false)).toBe("chatgpt");
     expect(chatAppFor("Claude", false)).toBe("claude");
     expect(chatAppFor(undefined, false)).toBe("claude");
+  });
+});
+
+describe("newChatModeFor", () => {
+  const web = { canOpenLinks: true, platform: "web", userAgents: ["Mozilla/5.0 Chrome/141"] };
+
+  it("opens a link on the web and in ChatGPT, copies in Claude Desktop", () => {
+    expect(newChatModeFor({ ...web, chatApp: "claude" })).toBe("link");
+    expect(newChatModeFor({ ...web, chatApp: "claude", platform: "desktop" })).toBe("copy");
+    expect(newChatModeFor({ ...web, chatApp: "claude", userAgents: [undefined, "Claude/1.2 Electron/38"] })).toBe("copy");
+    expect(newChatModeFor({ ...web, chatApp: "chatgpt", platform: "desktop" })).toBe("link");
+  });
+
+  it("copies wherever the host cannot open links", () => {
+    expect(newChatModeFor({ ...web, chatApp: "chatgpt", canOpenLinks: false })).toBe("copy");
   });
 });
 

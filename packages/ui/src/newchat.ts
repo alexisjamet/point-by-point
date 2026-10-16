@@ -20,6 +20,25 @@ export function chatAppFor(hostName: string | undefined, hasOpenAiBridge: boolea
   return hasOpenAiBridge || /chatgpt|openai/i.test(hostName ?? "") ? "chatgpt" : "claude";
 }
 
+/** How the button starts a new conversation: from a link, or from a paste of the copied text. */
+export type NewChatMode = "link" | "copy";
+
+/**
+ * Copy only where a link cannot work: hosts that cannot open links, and Claude Desktop, which asks
+ * to confirm a claude.ai link and then opens nothing. Claude Desktop is told by the platform it
+ * announces or by its Electron user agent.
+ */
+export function newChatModeFor(options: {
+  chatApp: ChatApp;
+  canOpenLinks: boolean;
+  platform: string | undefined;
+  userAgents: readonly (string | undefined)[];
+}): NewChatMode {
+  if (!options.canOpenLinks) return "copy";
+  const desktop = options.platform === "desktop" || options.userAgents.some((agent) => /electron/i.test(agent ?? ""));
+  return options.chatApp === "claude" && desktop ? "copy" : "link";
+}
+
 /** The first message of the new conversation: an intro line, the passage as a blockquote, then the note. */
 export function newChatPrompt(quote: string, note: string, intro: string): string {
   const parts = [intro, `> ${normalizeSpaces(quote)}`];

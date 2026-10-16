@@ -8,7 +8,7 @@ import { compose, normalizeSpaces } from "./compose";
 import { renderDiagnostic, isDiagnosticRequest } from "./diagnostic";
 import { createDraftStore, hashText, type Draft, type DraftAnnotation } from "./drafts";
 import { pickLang, t, type Lang, type Strings } from "./i18n";
-import { chatAppFor, newChatPrompt, newChatUrl } from "./newchat";
+import { chatAppFor, newChatModeFor, newChatPrompt, newChatUrl, type ChatApp, type NewChatMode } from "./newchat";
 import { watchRecency } from "./recency";
 import { renderMarkdown } from "./render";
 import {
@@ -230,8 +230,6 @@ function createAnnotation(draft: DraftAnnotation, options: { focus: boolean }): 
   const newChat = document.createElement("button");
   newChat.type = "button";
   newChat.className = "note-newchat";
-  // Only where the host can open links: the new conversation opens from one.
-  newChat.hidden = !app.getHostCapabilities()?.openLinks;
   actions.append(done);
   // New conversation and Remove sit in the top right corner (CSS), after the field in the tab order.
   note.append(quote, textarea, newChat, remove, actions);
@@ -288,21 +286,39 @@ function labelNote(annotation: Annotation) {
   remove.textContent = s.remove;
   remove.title = s.remove;
   const newChat = annotation.note.querySelector<HTMLButtonElement>(".note-newchat")!;
-  newChat.textContent = s.newChat;
-  newChat.title = s.newChat;
+  const label = newChatMode() === "copy" ? s.newChatCopy : s.newChat;
+  newChat.textContent = label;
+  newChat.title = label;
+}
+
+function chatApp(): ChatApp {
+  return chatAppFor(app.getHostVersion()?.name, "openai" in window);
+}
+
+function newChatMode(): NewChatMode {
+  const context = app.getHostContext();
+  return newChatModeFor({
+    chatApp: chatApp(),
+    canOpenLinks: !!app.getHostCapabilities()?.openLinks,
+    platform: context?.platform,
+    userAgents: [context?.userAgent, navigator.userAgent],
+  });
 }
 
 /**
- * Opens a new conversation, in the app the interface is shown in, prefilled with the passage and
- * the note. The text is also copied: Claude Desktop confirms a claude.ai link, then opens nothing.
+ * Starts a new conversation about the passage, in the app the interface is shown in. The text is
+ * always copied; where a link can work, a new conversation also opens prefilled with it.
  */
 async function openNewChat(annotation: Annotation) {
   hideError();
   const note = annotation.textarea.value;
-  const chatApp = chatAppFor(app.getHostVersion()?.name, "openai" in window);
-  const url = newChatUrl(chatApp, annotation.quote, note, s.newChatIntro);
   // The copy starts first, inside the click, where the browser allows it.
   const copied = copyText(newChatPrompt(annotation.quote, note, s.newChatIntro));
+  if (newChatMode() === "copy") {
+    showError((await copied) ? s.newChatCopiedOnly : s.newChatCopyFailed);
+    return;
+  }
+  const url = newChatUrl(chatApp(), annotation.quote, note, s.newChatIntro);
   const opened = app.openLink({ url }).then(
     (result) => !result.isError,
     () => false,
