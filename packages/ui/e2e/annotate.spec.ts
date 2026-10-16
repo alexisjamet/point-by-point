@@ -25,7 +25,7 @@ async function mount(page: Page, options: Partial<MountOptions> = {}) {
 
 const recorded = (page: Page) => page.evaluate(() => window.recorded);
 
-test("annotates sentences by click and sends them in document order", async ({ page }) => {
+test("annotates sentences by click, inserts them in document order, and keeps them", async ({ page }) => {
   const frame = await mount(page);
   await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
   await expect(frame.locator(".note textarea")).toBeFocused();
@@ -33,15 +33,28 @@ test("annotates sentences by click and sends them in document order", async ({ p
 
   await frame.locator(".phrase", { hasText: "First we migrate the database." }).click();
   await page.keyboard.type("Back up first.");
-  await expect(frame.locator("#send")).toHaveText("Send 2 annotations");
+  await expect(frame.locator("#send")).toHaveText("Insert 2 annotations into the message");
 
   await frame.locator("#send").click();
 
-  await expect(frame.locator("#status")).toHaveText("Passed to the conversation");
+  await expect(frame.locator("#status")).toHaveText("In your message box: read it, then send.");
   expect((await recorded(page)).messages).toEqual([
     "`First we migrate the database.` Back up first.\n\n`Watch the error rate.` Which dashboard?",
   ]);
-  await expect(frame.locator(".note")).toHaveCount(0);
+  await expect(frame.locator(".note textarea").first()).toHaveValue("Back up first.");
+  await expect(frame.locator(".note textarea").last()).toHaveValue("Which dashboard?");
+  await expect(frame.locator(".phrase", { hasText: "Watch the error rate." })).toHaveClass(/annotated/);
+  await expect(frame.locator("#send")).toHaveText("Insert 2 annotations into the message");
+});
+
+test("in ChatGPT, the button sends", async ({ page }) => {
+  const frame = await mount(page, { hostName: "chatgpt" });
+  await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
+  await page.keyboard.type("Which dashboard?");
+  await expect(frame.locator("#send")).toHaveText("Send");
+  await frame.locator("#send").click();
+  await expect(frame.locator("#status")).toHaveText("Passed to the conversation");
+  await expect(frame.locator(".note textarea")).toHaveValue("Which dashboard?");
 });
 
 test("has no general remark field: every note hangs on a passage", async ({ page }) => {
@@ -207,7 +220,7 @@ test("works with the keyboard alone", async ({ page }) => {
   await expect(frame.locator(".phrase[tabindex]").first()).toBeFocused();
 });
 
-test("restores drafts after a reload and clears them after sending", async ({ page }) => {
+test("restores drafts after a reload, also after sending", async ({ page }) => {
   let frame = await mount(page);
   await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
   await page.keyboard.type("Draft reply");
@@ -219,7 +232,7 @@ test("restores drafts after a reload and clears them after sending", async ({ pa
   await expect(frame.locator("#status")).toBeVisible();
 
   frame = await mount(page);
-  await expect(frame.locator(".note")).toHaveCount(0);
+  await expect(frame.locator(".note textarea")).toHaveValue("Draft reply");
 });
 
 test("an earlier widget adds a context line", async ({ page }) => {
@@ -261,10 +274,10 @@ test("speaks French when the host does", async ({ page }) => {
   await expect(frame.locator(".note-remove")).toHaveAttribute("title", "Retirer");
   await expect(frame.locator(".note-done")).toHaveText("Valider");
   await page.keyboard.type("Pourquoi ?");
-  await expect(frame.locator("#send")).toHaveText("Envoyer");
+  await expect(frame.locator("#send")).toHaveText("Insérer dans le message");
   await frame.locator(".phrase", { hasText: "Keep the old cluster" }).click();
   await page.keyboard.type("Combien ?");
-  await expect(frame.locator("#send")).toHaveText("Envoyer 2 annotations");
+  await expect(frame.locator("#send")).toHaveText("Insérer 2 annotations dans le message");
 });
 
 test("renders streamed input and enables annotation only at the end", async ({ page }) => {
@@ -329,18 +342,21 @@ test("the diagnostic sends a fresh report", async ({ page }) => {
   expect(report).toContain('"availableDisplayModes": [\n    "inline",\n    "fullscreen"\n  ]');
 });
 
-test("restores the notes of the last send", async ({ page }) => {
+test("after a send, a changed note clears the status and the button sends again", async ({ page }) => {
   const frame = await mount(page);
   await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
   await page.keyboard.type("Which dashboard?");
   await frame.locator("#send").click();
-  await expect(frame.locator(".note")).toHaveCount(0);
+  await expect(frame.locator("#status")).toBeVisible();
+  await expect(frame.getByRole("button", { name: "Restore notes" })).toHaveCount(0);
 
-  await frame.getByRole("button", { name: "Restore notes" }).click();
-  await expect(frame.locator(".note textarea")).toHaveValue("Which dashboard?");
-  await expect(frame.locator("#send")).toHaveText("Send");
-  await expect(frame.getByRole("button", { name: "Restore notes" })).toBeHidden();
-  await expect(frame.locator(".phrase", { hasText: "Watch the error rate." })).toHaveClass(/annotated/);
+  await frame.locator(".note textarea").fill("Which dashboard? The new one?");
+  await expect(frame.locator("#status")).toBeHidden();
+  await frame.locator("#send").click();
+  await expect.poll(async () => (await recorded(page)).messages).toEqual([
+    "`Watch the error rate.` Which dashboard?",
+    "`Watch the error rate.` Which dashboard? The new one?",
+  ]);
 });
 
 for (const args of [
