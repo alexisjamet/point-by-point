@@ -192,6 +192,14 @@ test("removing a note clears the highlight", async ({ page }) => {
   await expect(sentence).toBeFocused();
 });
 
+test("the quote never runs under the buttons in the note's corner", async ({ page }) => {
+  const frame = await mount(page);
+  await frame.locator(".phrase", { hasText: "First we migrate the database." }).click();
+  const quote = await frame.locator(".note-quote").boundingBox();
+  const newChat = await frame.locator(".note-newchat").boundingBox();
+  expect(quote!.x + quote!.width).toBeLessThanOrEqual(newChat!.x);
+});
+
 test("works with the keyboard alone", async ({ page }) => {
   const frame = await mount(page);
   await frame.locator(".phrase[tabindex]").first().focus();
