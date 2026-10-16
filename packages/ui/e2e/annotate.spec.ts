@@ -161,6 +161,22 @@ test("a note opens a new conversation prefilled with its passage and its text", 
   expect((await recorded(page)).messages).toEqual([]);
 });
 
+test("in Claude Desktop, the new conversation button copies the text and opens no link", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  const frame = await mount(page, { context: { platform: "desktop" } });
+  await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
+  await page.keyboard.type("Which dashboard?");
+  const button = frame.locator(".note-newchat");
+  await expect(button).toHaveAttribute("title", "Copy for a new conversation about this passage");
+  await button.click();
+
+  await expect(frame.locator("#error")).toHaveText("Copied: start a new conversation and paste.");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    "About this passage:\n\n> Watch the error rate.\n\nWhich dashboard?",
+  );
+  expect((await recorded(page)).links).toEqual([]);
+});
+
 test("removing a note clears the highlight", async ({ page }) => {
   const frame = await mount(page);
   const sentence = frame.locator(".phrase", { hasText: "Watch the error rate." });
