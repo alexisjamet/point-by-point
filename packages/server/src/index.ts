@@ -91,7 +91,7 @@ async function serveMcp(request: Request): Promise<Response> {
 
 const INFO = `point-by-point ${VERSION}
 
-MCP server: annotate Claude's responses sentence by sentence.
+MCP server: annotate the assistant's responses (Claude, ChatGPT) sentence by sentence.
 Endpoint: /mcp
 Source: https://github.com/alexisjamet/point-by-point
 This server stores nothing, logs no content and makes no outbound calls.

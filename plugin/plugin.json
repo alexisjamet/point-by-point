@@ -1,0 +1,27 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "point-by-point",
+  "version": "0.21.0",
+  "description": "Annotate any sentence of the assistant's responses and reply point by point in a single message.",
+  "author": {
+    "name": "Alexis Jamet"
+  },
+  "homepage": "https://github.com/alexisjamet/point-by-point",
+  "repository": "https://github.com/alexisjamet/point-by-point",
+  "license": "MIT",
+  "keywords": [
+    "annotation",
+    "mcp-app",
+    "reply",
+    "review",
+    "feedback"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Point by point",
+        "shortDescription": "Annotate any sentence of a response and reply point by point."
+      }
+    }
+  }
+}
