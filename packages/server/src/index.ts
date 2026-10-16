@@ -1,5 +1,5 @@
 import { createMcpHandler } from "@modelcontextprotocol/server";
-import { PLAIN_SESSION_PREFIX, TOOL_NAME, UI_SESSION_PREFIX, createServer, uiSupportFromRequest } from "./server";
+import { PLAIN_SESSION_PREFIX, UI_SESSION_PREFIX, createServer, uiSupportFromRequest } from "./server";
 import { VERSION } from "./ui.generated";
 
 export interface Env {
@@ -10,8 +10,8 @@ export interface Env {
 const UI_HEADER = "x-point-by-point-ui";
 
 const handler = createMcpHandler(({ requestInfo }) => createServer({ ui: requestInfo?.headers.get(UI_HEADER) === "1" }), {
-  // Errors only, and never the request content.
-  onerror: (error) => console.error(`mcp error: ${error.name}: ${error.message.slice(0, 200)}`),
+  // The error name only: a message can quote the request, which could hold conversation text.
+  onerror: (error) => console.error(`mcp error: ${error.name}`),
 });
 
 async function readJson(request: Request): Promise<unknown> {
@@ -58,8 +58,10 @@ async function serveMcp(request: Request): Promise<Response> {
   const body = await readJson(request);
   const method = methodOf(body);
   const { ui, reason } = uiSupportFromRequest(body, request.headers.get("mcp-session-id"));
-  // Hosts keep the tool list, so a list without the tool is worth a trace.
-  if (!ui && method === "tools/list") console.log(`tools/list without ${TOOL_NAME}: ${reason}`);
+  // Which clients list or call the tool without rendering the interface, and why we think so.
+  if (!ui && (method === "tools/list" || method === "tools/call")) {
+    console.log(`${method} from a client without the interface: ${reason}`);
+  }
   const headers = new Headers(request.headers);
   headers.delete(UI_HEADER);
   if (ui) headers.set(UI_HEADER, "1");
@@ -73,7 +75,7 @@ async function serveMcp(request: Request): Promise<Response> {
     const verb = loggable(request.method, (v) => ["GET", "POST", "DELETE"].includes(v));
     console.log(
       `2025 ${verb} ${name}, protocol ${version}, status ${response.status}, ` +
-        `tool ${ui ? "declared" : "hidden"}: ${reason}`,
+        `interface ${ui ? "yes" : "no"}: ${reason}`,
     );
   }
 
