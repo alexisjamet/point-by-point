@@ -52,8 +52,15 @@ together, and keeps the skill up to date with each release.
    ```
 
 2. Install the **point-by-point** plugin, which now appears among the plugins.
-3. Open the plugin, go to its **Connectors** tab and **Add** the `point-by-point` connector:
-   installing a plugin does not add its connector by itself.
+3. **Connect the connector.** Installing the plugin does not connect it: until you do, Claude
+   has no `annotate_response` tool and answers in the chat as usual, without saying why. Open
+   the plugin, go to its **Connectors** tab, where `point-by-point` shows **Not added**, and click
+   **Connect**.
+
+   <img src="docs/images/plugin-connect.png" width="720" alt="The point-by-point plugin page, Connectors tab: the point-by-point connector shows Not added, with a Connect button on its right.">
+
+4. Check it in a new chat: `point-by-point` appears, turned on, in the chat's tools menu.
+   **Try in chat** only uses point-by-point once the connector is connected.
 
 To get each release without doing anything, turn on **Sync automatically** for the marketplace.
 
