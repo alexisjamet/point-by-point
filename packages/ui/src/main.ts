@@ -8,7 +8,7 @@ import { compose, normalizeSpaces } from "./compose";
 import { renderDiagnostic, isDiagnosticRequest } from "./diagnostic";
 import { createDraftStore, hashText, type Draft, type DraftAnnotation } from "./drafts";
 import { pickLang, t, type Lang, type Strings } from "./i18n";
-import { chatAppFor, newChatUrl } from "./newchat";
+import { chatAppFor, newChatPrompt, newChatUrl } from "./newchat";
 import { watchRecency } from "./recency";
 import { renderMarkdown } from "./render";
 import {
@@ -266,7 +266,7 @@ function createAnnotation(draft: DraftAnnotation, options: { focus: boolean }): 
   textarea.addEventListener("keydown", (event) => onFieldKeydown(event, annotation));
   done.addEventListener("click", () => leaveFocusMode());
   remove.addEventListener("click", () => removeAnnotation(annotation));
-  newChat.addEventListener("click", () => openNewChat(annotation));
+  newChat.addEventListener("click", () => void openNewChat(annotation));
 
   refreshHighlights();
   if (annotation.sentence !== undefined) {
@@ -292,17 +292,24 @@ function labelNote(annotation: Annotation) {
   newChat.title = s.newChat;
 }
 
-/** Opens a new conversation, in the app the interface is shown in, prefilled with the passage and the note. */
-function openNewChat(annotation: Annotation) {
+/**
+ * Opens a new conversation, in the app the interface is shown in, prefilled with the passage and
+ * the note. The text is also copied: Claude Desktop confirms a claude.ai link, then opens nothing.
+ */
+async function openNewChat(annotation: Annotation) {
   hideError();
+  const note = annotation.textarea.value;
   const chatApp = chatAppFor(app.getHostVersion()?.name, "openai" in window);
-  const url = newChatUrl(chatApp, annotation.quote, annotation.textarea.value, s.newChatIntro);
-  app
-    .openLink({ url })
-    .then((result) => {
-      if (result.isError) showError(s.newChatFailed);
-    })
-    .catch(() => showError(s.newChatFailed));
+  const url = newChatUrl(chatApp, annotation.quote, note, s.newChatIntro);
+  // The copy starts first, inside the click, where the browser allows it.
+  const copied = copyText(newChatPrompt(annotation.quote, note, s.newChatIntro));
+  const opened = app.openLink({ url }).then(
+    (result) => !result.isError,
+    () => false,
+  );
+  const [didCopy, didOpen] = await Promise.all([copied, opened]);
+  if (!didCopy) showError(s.newChatCopyFailed);
+  else showError(didOpen ? s.newChatCopied : s.newChatNotOpened);
 }
 
 /** Brings a note into view: focus on desktop; on touch, no focus so the keyboard stays closed. */
@@ -788,17 +795,25 @@ restoreButton.addEventListener("click", () => {
   saveDraft();
 });
 
-copyButton.addEventListener("click", async () => {
-  const text = fallbackText.value;
+/**
+ * Copies through the clipboard API, or else from the fallback box, which then stays shown with the
+ * text so it can be copied by hand.
+ */
+async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
-    showError(s.copied);
+    return true;
   } catch {
+    fallbackText.value = text;
+    fallbackBox.hidden = false;
     fallbackText.focus();
     fallbackText.select();
-    const copied = document.execCommand?.("copy") ?? false;
-    showError(copied ? s.copied : s.copyFailed);
+    return document.execCommand?.("copy") ?? false;
   }
+}
+
+copyButton.addEventListener("click", async () => {
+  showError((await copyText(fallbackText.value)) ? s.copied : s.copyFailed);
 });
 
 // ---------- Connection ----------

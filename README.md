@@ -202,7 +202,9 @@ in the chat, so you never end up with an invisible response.
 - The bubble icon in a note's corner opens a **new conversation** about that passage, in the app you
   are in (claude.ai or chatgpt.com), prefilled with the passage and your note; the note stays in
   place. It opens through the host as a link, so desktop apps may open it in your browser. A very
-  long passage is shortened to keep the link under 8,000 characters; your note never is.
+  long passage is shortened to keep the link under 8,000 characters; your note never is. The whole
+  text is also copied to your clipboard: Claude Desktop asks to confirm a claude.ai link, then opens
+  nothing, so there you start a new conversation and paste.
 - **Send** hands the message to the host. Claude Desktop places it in your message box under a
   caution banner it shows for every message an interactive app proposes; read it and press Enter
   to send it. If you discard it, **Restore notes** brings your notes back.

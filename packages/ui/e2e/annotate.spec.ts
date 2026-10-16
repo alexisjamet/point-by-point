@@ -137,7 +137,8 @@ test("links open through the host and do not open a note", async ({ page }) => {
   await expect(frame.locator(".note")).toHaveCount(0);
 });
 
-test("a note opens a new conversation prefilled with its passage and its text", async ({ page }) => {
+test("a note opens a new conversation prefilled with its passage and its text", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const frame = await mount(page);
   await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
   await page.keyboard.type("Which dashboard?");
@@ -150,6 +151,11 @@ test("a note opens a new conversation prefilled with its passage and its text", 
   const url = new URL(link!);
   expect(`${url.origin}${url.pathname}`).toBe("https://claude.ai/new");
   expect(url.searchParams.get("q")).toBe("About this passage:\n\n> Watch the error rate.\n\nWhich dashboard?");
+  // The text is also copied, for hosts that confirm the link and then open nothing (Claude Desktop).
+  await expect(frame.locator("#error")).toHaveText("Also copied: if no conversation opened, start a new one and paste.");
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    "About this passage:\n\n> Watch the error rate.\n\nWhich dashboard?",
+  );
   // The note stays, and nothing is sent to the current conversation.
   await expect(frame.locator(".note textarea")).toHaveValue("Which dashboard?");
   expect((await recorded(page)).messages).toEqual([]);
