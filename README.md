@@ -12,7 +12,8 @@ what a click will annotate.
   <img src="docs/images/annotate-light.png" width="720" alt="A response from Claude in the point-by-point interface: one sentence and one passage are highlighted, each with a note written under it, and the Send button below.">
 </picture>
 
-**2. Send.** Your notes reach Claude as one message, in the order of the response:
+**2. Insert them into the message.** Your notes go to your message box as one message, in the
+order of the response, and stay in place in the interface:
 
 ```
 `First we migrate the database.` Back it up first.
@@ -124,8 +125,8 @@ interface:
 
 1. Click a sentence (or select a passage) and type your reply under it. Repeat for as many
    sentences as you like.
-2. Press **Send**. On Claude Desktop the message lands in your message box first: press Enter to
-   send it.
+2. Press **Insert into the message** (in ChatGPT, **Send**). In Claude the message lands in your
+   message box: press Enter to send it.
 3. The assistant answers each of your points, in a new interface.
 
 ### If it doesn't work
@@ -182,7 +183,8 @@ Planned once the v1 is stable, through the
 2. The host loads the interface resource (`ui://point-by-point/annotate-v<major>.<minor>.html`) in a
    sandboxed iframe and passes it the markdown.
 3. The interface renders the markdown (sanitised), splits it into sentences and lets you annotate.
-4. **Send** injects the composed message into the conversation as if you had typed it.
+4. The button hands the composed message to the host, which puts it in the message box (Claude) or
+   sends it (ChatGPT) as if you had typed it.
 5. Claude reads the quotes, answers each point, and responds through the tool again.
 
 The tool is declared to every client. Clients that render MCP Apps get the interface: those that
@@ -195,9 +197,9 @@ in the chat, so you never end up with an invisible response.
 
 - Click a sentence, or select a passage of more than two characters, to open a note under its
   paragraph. Click an annotated sentence again to return to its note.
-- Every note hangs on a sentence or a passage; empty notes are ignored. **Send** only shows once a
-  note has text, and then the hint goes away; from two notes on it says how many it sends ("Send 2
-  annotations").
+- Every note hangs on a sentence or a passage; empty notes are ignored. The button only shows once a
+  note has text, and then the hint goes away; from two notes on it says how many it hands over
+  ("Insert 2 annotations into the message", or "Send 2 annotations" in ChatGPT).
 - Notes are sent in document order; backticks in quotes become apostrophes.
 - The bubble icon in a note's corner starts a **new conversation** about that passage: it copies
   the passage and your note to your clipboard, and on claude.ai and in ChatGPT it also opens a new
@@ -206,18 +208,21 @@ in the chat, so you never end up with an invisible response.
   the link, to keep it under 8,000 characters, never in the copy; your note never is. Claude
   Desktop asks to confirm a claude.ai link and then opens nothing, so there the button only copies:
   start a new conversation and paste.
-- **Send** hands the message to the host. Claude Desktop places it in your message box under a
-  caution banner it shows for every message an interactive app proposes; read it and press Enter
-  to send it. If you discard it, **Restore notes** brings your notes back.
-- After sending, a mark appears and the widget stays usable. A widget from an earlier
+- The button hands the message to the host. Claude places it in your message box (Claude Desktop
+  under a caution banner it shows for every message an interactive app proposes), so the button
+  reads **Insert into the message**; read it and press Enter to send it. ChatGPT sends it, so the
+  button reads **Send**.
+- The notes stay in place after a send, and are kept with the response's draft: the response keeps
+  them as a record, and if you discard the message, the button hands it over again. A mark says
+  where the message went, until you change a note. A widget from an earlier
   response can still send: its message starts with "(About an earlier response)".
-- Every keystroke is saved as a draft and restored if the page reloads before sending.
+- Every keystroke is saved as a draft and restored if the page reloads.
 - Keyboard: Tab / Shift+Tab move between sentences, Enter opens a note, Escape leaves a note,
   Cmd/Ctrl+Enter sends.
 - Mobile: creating a note does not open the keyboard; fields are 16 px (no iOS zoom). Opening a
   note asks the host for fullscreen; if the host refuses, a focus mode keeps only the quote, the
   field and a **Done** button above the keyboard. In fullscreen, **Done** shows the whole response
-  at the note, still fullscreen, so you can go on to the next point; **Send** or **Back to the
+  at the note, still fullscreen, so you can go on to the next point; the send button or **Back to the
   conversation** returns inline.
 - English and French, following the host's locale. Light and dark, following the host's theme.
 - Links open through the host. Images are shown as links (the interface loads nothing remote).

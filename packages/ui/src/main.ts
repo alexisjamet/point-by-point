@@ -37,7 +37,6 @@ const sendButton = $<HTMLButtonElement>("#send");
 const previousNoteButton = $<HTMLButtonElement>("#previous-note");
 const nextNoteButton = $<HTMLButtonElement>("#next-note");
 const statusLabel = $<HTMLElement>("#status");
-const restoreButton = $<HTMLButtonElement>("#restore");
 const errorBox = $<HTMLElement>("#error");
 const fallbackBox = $<HTMLElement>("#fallback");
 const fallbackText = $<HTMLTextAreaElement>("#fallback-text");
@@ -98,8 +97,7 @@ function applyLabels() {
   copyButton.textContent = s.copy;
   hintLabel.textContent = isTouch() ? s.hintTouch : s.hint;
   storageNotice.textContent = s.noStorage;
-  if (!statusLabel.hidden) statusLabel.textContent = s.sent;
-  restoreButton.textContent = s.restore;
+  if (!statusLabel.hidden) statusLabel.textContent = sentStatus();
   $<HTMLButtonElement>("#collapse").textContent = s.collapse;
   previousNoteButton.setAttribute("aria-label", s.previousNote);
   previousNoteButton.title = s.previousNote;
@@ -256,7 +254,7 @@ function createAnnotation(draft: DraftAnnotation, options: { focus: boolean }): 
     autoGrow(textarea);
     hideError();
     updateCount();
-    scheduleSave();
+    notesChanged();
   });
   textarea.addEventListener("focus", () => {
     if (isTouch()) enterFocusMode(note);
@@ -364,7 +362,7 @@ function annotateSentence(sentence: Sentence) {
     },
     { focus: true },
   );
-  scheduleSave();
+  notesChanged();
 }
 
 function annotateSelection(range: Range) {
@@ -380,7 +378,7 @@ function annotateSelection(range: Range) {
   }
   window.getSelection()?.removeAllRanges();
   createAnnotation({ kind: "selection", start, end, quote, text: "" }, { focus: true });
-  scheduleSave();
+  notesChanged();
 }
 
 /** The selected response text, without the text of any note it crosses. */
@@ -405,7 +403,7 @@ function removeAnnotation(annotation: Annotation) {
   }
   target?.focus({ preventScroll: true });
   updateCount();
-  scheduleSave();
+  notesChanged();
 }
 
 /** The sentence that keyboard focus returns to when leaving or removing an annotation. */
@@ -632,7 +630,7 @@ function updateCount() {
   // Send says how many notes it sends, and only shows once a note has text; then the hint has done
   // its job.
   if (!sending) {
-    sendButton.textContent = s.sendCount(count);
+    sendButton.textContent = hostInserts() ? s.insertCount(count) : s.sendCount(count);
     sendButton.disabled = count === 0;
     sendButton.hidden = count === 0;
   }
@@ -697,6 +695,12 @@ window.addEventListener(
   { passive: true },
 );
 
+/** After a note is added, edited or removed: the status of the last send no longer holds. */
+function notesChanged() {
+  statusLabel.hidden = true;
+  scheduleSave();
+}
+
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 function scheduleSave() {
   clearTimeout(saveTimer);
@@ -747,10 +751,18 @@ function showError(message: string) {
   errorBox.hidden = false;
 }
 
-// Hosts may only place the message in the input box for the user to confirm. If the user discards
-// it there, the last batch can be brought back.
-let lastSent: Draft | null = null;
+// Claude places an app's message in its message box, for the user to read and send; ChatGPT sends
+// it. The button and the status say which.
+function hostInserts(): boolean {
+  return chatApp() === "claude";
+}
 
+function sentStatus(): string {
+  return hostInserts() ? s.inserted : s.sent;
+}
+
+// The notes stay in place after a send: the response keeps them as a record, and if the message is
+// discarded in the host, the button sends them again.
 async function send() {
   if (!ready || sending) return;
   hideError();
@@ -764,28 +776,14 @@ async function send() {
 
   sending = true;
   sendButton.disabled = true;
-  sendButton.textContent = s.sending;
+  sendButton.textContent = hostInserts() ? s.inserting : s.sending;
   try {
     const result = await app.sendMessage({ role: "user", content: [{ type: "text", text: message }] });
     if (result.isError) throw new Error("rejected");
-    lastSent = {
-      annotations: Array.from(annotations.values())
-        .filter((annotation) => annotation.text.trim())
-        .map(({ kind, sentence, start, end, quote, text }) => ({ kind, sentence, start, end, quote, text })),
-    };
-    for (const annotation of Array.from(annotations.values())) {
-      if (!annotation.text.trim()) continue;
-      annotations.delete(annotation.id);
-      annotation.note.remove();
-    }
-    refreshHighlights();
-    for (const sentence of sentences) labelSentence(sentence);
     leaveSheet();
     if (focusTarget) leaveFocusMode({ restoreFocus: false });
-    saveDraft();
-    statusLabel.textContent = s.sent;
+    statusLabel.textContent = sentStatus();
     statusLabel.hidden = false;
-    restoreButton.hidden = false;
   } catch {
     showError(s.sendFailed);
     fallbackText.value = message;
@@ -797,19 +795,6 @@ async function send() {
 }
 
 sendButton.addEventListener("click", () => void send());
-
-restoreButton.addEventListener("click", () => {
-  if (!lastSent) return;
-  for (const saved of lastSent.annotations) {
-    if (saved.kind === "sentence" && saved.sentence !== undefined && sentenceAnnotation(saved.sentence)) continue;
-    createAnnotation(saved, { focus: false });
-  }
-  lastSent = null;
-  restoreButton.hidden = true;
-  statusLabel.hidden = true;
-  updateCount();
-  saveDraft();
-});
 
 /**
  * Copies through the clipboard API, or else from the fallback box, which then stays shown with the

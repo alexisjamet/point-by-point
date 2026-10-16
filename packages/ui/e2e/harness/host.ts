@@ -10,6 +10,7 @@ export interface MountOptions {
   createdAt?: number;
   failMessages?: boolean;
   allowFullscreen?: boolean;
+  hostName?: string;
 }
 
 interface Recorded {
@@ -45,7 +46,7 @@ window.mount = async (options) => {
   };
   const bridge = new AppBridge(
     null,
-    { name: "test-host", version: "1.0.0" },
+    { name: options.hostName ?? "test-host", version: "1.0.0" },
     { openLinks: {}, message: { text: {} }, logging: {} },
     { hostContext: context },
   );
