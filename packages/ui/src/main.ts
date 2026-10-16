@@ -627,10 +627,10 @@ function filledCount(): number {
 
 function updateCount() {
   const count = filledCount();
-  // Send says how many notes it sends, and only shows once a note has text; then the hint has done
-  // its job.
+  // Send (ChatGPT) says how many notes it sends; Draft my reply (Claude) does not. Either only shows
+  // once a note has text; then the hint has done its job.
   if (!sending) {
-    sendButton.textContent = hostInserts() ? s.insertCount(count) : s.sendCount(count);
+    sendButton.textContent = hostInserts() ? s.insert : s.sendCount(count);
     sendButton.disabled = count === 0;
     sendButton.hidden = count === 0;
   }
