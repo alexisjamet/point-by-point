@@ -199,6 +199,10 @@ in the chat, so you never end up with an invisible response.
   note has text, and then the hint goes away; from two notes on it says how many it sends ("Send 2
   annotations").
 - Notes are sent in document order; backticks in quotes become apostrophes.
+- The bubble icon in a note's corner opens a **new conversation** about that passage, in the app you
+  are in (claude.ai or chatgpt.com), prefilled with the passage and your note; the note stays in
+  place. It opens through the host as a link, so desktop apps may open it in your browser. A very
+  long passage is shortened to keep the link under 8,000 characters; your note never is.
 - **Send** hands the message to the host. Claude Desktop places it in your message box under a
   caution banner it shows for every message an interactive app proposes; read it and press Enter
   to send it. If you discard it, **Restore notes** brings your notes back.
@@ -235,7 +239,9 @@ What the code guarantees:
   anything else from the request. Cloudflare keeps them for a few days (Workers Logs), without the
   request URLs or headers.
 - **No outbound calls**, from the server or the interface. Everything is inlined in one HTML file:
-  no CDN script, font or image.
+  no CDN script, font or image. The new conversation button only asks the host to open a link to
+  claude.ai or chatgpt.com: the passage and the note in that link go to the app you are using,
+  never to this server.
 - **Sanitised rendering.** Markdown goes through `marked` then DOMPurify with a strict allow-list;
   if DOMPurify cannot run, the text is shown as plain text, never as raw HTML.
 - **No authentication and no personal data.** A Cloudflare rate limit (1000 requests per minute per
