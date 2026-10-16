@@ -8,6 +8,7 @@ import { compose, normalizeSpaces } from "./compose";
 import { renderDiagnostic, isDiagnosticRequest } from "./diagnostic";
 import { createDraftStore, hashText, type Draft, type DraftAnnotation } from "./drafts";
 import { pickLang, t, type Lang, type Strings } from "./i18n";
+import { chatAppFor, newChatUrl } from "./newchat";
 import { watchRecency } from "./recency";
 import { renderMarkdown } from "./render";
 import {
@@ -226,9 +227,14 @@ function createAnnotation(draft: DraftAnnotation, options: { focus: boolean }): 
   const remove = document.createElement("button");
   remove.type = "button";
   remove.className = "note-remove";
+  const newChat = document.createElement("button");
+  newChat.type = "button";
+  newChat.className = "note-newchat";
+  // Only where the host can open links: the new conversation opens from one.
+  newChat.hidden = !app.getHostCapabilities()?.openLinks;
   actions.append(done);
-  // Remove sits in the top right corner (CSS), after the field in the tab order.
-  note.append(quote, textarea, remove, actions);
+  // New conversation and Remove sit in the top right corner (CSS), after the field in the tab order.
+  note.append(quote, textarea, newChat, remove, actions);
 
   const annotation: Annotation = {
     ...draft,
@@ -260,6 +266,7 @@ function createAnnotation(draft: DraftAnnotation, options: { focus: boolean }): 
   textarea.addEventListener("keydown", (event) => onFieldKeydown(event, annotation));
   done.addEventListener("click", () => leaveFocusMode());
   remove.addEventListener("click", () => removeAnnotation(annotation));
+  newChat.addEventListener("click", () => openNewChat(annotation));
 
   refreshHighlights();
   if (annotation.sentence !== undefined) {
@@ -280,6 +287,22 @@ function labelNote(annotation: Annotation) {
   const remove = annotation.note.querySelector<HTMLButtonElement>(".note-remove")!;
   remove.textContent = s.remove;
   remove.title = s.remove;
+  const newChat = annotation.note.querySelector<HTMLButtonElement>(".note-newchat")!;
+  newChat.textContent = s.newChat;
+  newChat.title = s.newChat;
+}
+
+/** Opens a new conversation, in the app the interface is shown in, prefilled with the passage and the note. */
+function openNewChat(annotation: Annotation) {
+  hideError();
+  const chatApp = chatAppFor(app.getHostVersion()?.name, "openai" in window);
+  const url = newChatUrl(chatApp, annotation.quote, annotation.textarea.value, s.newChatIntro);
+  app
+    .openLink({ url })
+    .then((result) => {
+      if (result.isError) showError(s.newChatFailed);
+    })
+    .catch(() => showError(s.newChatFailed));
 }
 
 /** Brings a note into view: focus on desktop; on touch, no focus so the keyboard stays closed. */

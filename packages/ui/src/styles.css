@@ -22,6 +22,7 @@
   --pbp-card-shadow-focus: 0 4px 20px rgba(0, 0, 0, 0.075);
   --pbp-send: #c6613f;
   --pbp-cross: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M4 4l8 8M12 4l-8 8'/%3E%3C/svg%3E");
+  --pbp-newchat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 2.5h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7.5L4.5 14v-2.5H3a1 1 0 0 1-1-1v-7a1 1 0 0 1 1-1z'/%3E%3Cpath d='M8 4.75v4.5M5.75 7h4.5'/%3E%3C/svg%3E");
   /* The host's font files are not loaded (no outbound calls), so its family names would not
      resolve: use the system interface font instead, SF Pro on macOS and iOS (its licence forbids
      embedding it), Segoe UI on Windows, Roboto on Android. */
@@ -567,9 +568,64 @@ button.note-remove:hover {
   }
 }
 
-/* The quote keeps clear of the cross. */
+/* New conversation: same quiet icon button, left of the cross. */
+button.note-newchat {
+  position: absolute;
+  top: 6px;
+  right: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  color: var(--pbp-faint);
+  font-size: 0;
+  overflow: hidden;
+}
+
+button.note-newchat[hidden] {
+  display: none;
+}
+
+button.note-newchat::before {
+  content: "";
+  width: 15px;
+  height: 15px;
+  background: currentColor;
+  -webkit-mask: var(--pbp-newchat) center / contain no-repeat;
+  mask: var(--pbp-newchat) center / contain no-repeat;
+}
+
+button.note-newchat:hover {
+  color: var(--pbp-text);
+}
+
+@media (pointer: coarse) {
+  button.note-newchat {
+    top: 2px;
+    right: 40px;
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* The quote keeps clear of the cross, and of the new conversation button when there is one. */
 .note-quote {
   margin-right: 22px;
+}
+
+.note:has(.note-newchat:not([hidden])) .note-quote {
+  margin-right: 52px;
+}
+
+@media (pointer: coarse) {
+  .note:has(.note-newchat:not([hidden])) .note-quote {
+    margin-right: 64px;
+  }
 }
 
 /* ---------- Composer ---------- */

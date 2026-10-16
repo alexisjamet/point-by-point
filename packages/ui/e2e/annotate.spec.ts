@@ -137,6 +137,24 @@ test("links open through the host and do not open a note", async ({ page }) => {
   await expect(frame.locator(".note")).toHaveCount(0);
 });
 
+test("a note opens a new conversation prefilled with its passage and its text", async ({ page }) => {
+  const frame = await mount(page);
+  await frame.locator(".phrase", { hasText: "Watch the error rate." }).click();
+  await page.keyboard.type("Which dashboard?");
+  const button = frame.locator(".note-newchat");
+  await expect(button).toHaveAttribute("title", "New conversation about this passage");
+  await button.click();
+
+  await expect.poll(async () => (await recorded(page)).links.length).toBe(1);
+  const [link] = (await recorded(page)).links;
+  const url = new URL(link!);
+  expect(`${url.origin}${url.pathname}`).toBe("https://claude.ai/new");
+  expect(url.searchParams.get("q")).toBe("About this passage:\n\n> Watch the error rate.\n\nWhich dashboard?");
+  // The note stays, and nothing is sent to the current conversation.
+  await expect(frame.locator(".note textarea")).toHaveValue("Which dashboard?");
+  expect((await recorded(page)).messages).toEqual([]);
+});
+
 test("removing a note clears the highlight", async ({ page }) => {
   const frame = await mount(page);
   const sentence = frame.locator(".phrase", { hasText: "Watch the error rate." });
