@@ -37,14 +37,33 @@ support MCP Apps (claude.ai, Claude Desktop, the Claude mobile apps).
 ## Install
 
 The server is hosted once for everyone (or [run your own copy](#run-your-own-copy-of-the-server));
-there is nothing to install on your computer. You add a **connector** (the server) to your Claude
-account; it tells Claude how to use it on its own. A **skill** with the same rules is optional: it
-makes Claude follow them more reliably.
+there is nothing to install on your computer. Do this once on [claude.ai](https://claude.ai) in a
+browser; it then applies everywhere you use Claude with that account (web, desktop and mobile apps).
 
-### claude.ai, Claude Desktop and the mobile apps
+### As a plugin (recommended)
 
-Do this once on [claude.ai](https://claude.ai) in a browser; it then applies everywhere you use
-Claude with that account.
+The plugin brings the **connector** (the server) and the **skill** (which tells Claude to use it)
+together, and keeps the skill up to date with each release.
+
+1. Go to **Customize → Plugins → Add → Add marketplace** and enter:
+
+   ```
+   alexisjamet/point-by-point
+   ```
+
+2. Install the **point-by-point** plugin, which now appears among the plugins.
+3. Open the plugin, go to its **Connectors** tab and **Add** the `point-by-point` connector:
+   installing a plugin does not add its connector by itself.
+
+To get each release without doing anything, turn on **Sync automatically** for the marketplace.
+
+If you installed the connector or the skill by hand before, remove them from **Customize →
+Connectors** and **Customize → Skills**, so they do not appear twice.
+
+### Without the plugin
+
+If your plan or organisation does not offer plugins, add the connector by hand: it tells Claude how
+to use it on its own.
 
 1. **Add the connector.** Go to **Settings → Connectors → Add custom connector**, give it a name
    (for example `point-by-point`) and paste this URL:
@@ -53,12 +72,14 @@ Claude with that account.
    https://point-by-point.brols.workers.dev/mcp
    ```
 
-2. **Optional: add the skill.** Download
+2. **Optional: add the skill.** It holds the same rules as the connector and makes Claude follow
+   them more reliably. Download
    [`point-by-point-skill.zip`](https://github.com/alexisjamet/point-by-point/releases/latest/download/point-by-point-skill.zip),
    then upload it in **Settings → Capabilities → Skills**. Upload the `.zip` as it is: do not
-   unzip it (if your browser unzipped it on its own, zip the `point-by-point` folder again).
+   unzip it (if your browser unzipped it on its own, zip the `point-by-point` folder again). A skill
+   uploaded this way does not update itself: upload the new archive to get a later release.
 
-Menu names move from time to time; look for "Connectors" and "Skills" in the settings.
+Menu names move from time to time; look for "Plugins", "Connectors" and "Skills" in the settings.
 
 ### Try it
 
@@ -73,14 +94,15 @@ an interface:
 
 ### If it doesn't work
 
-- **Claude answers in plain text.** Check that the connector is turned on for this conversation
-  (the tools menu in the message box), then start a new conversation. If it still happens, add the
-  skill (step 2), or check that it is turned on in **Settings → Capabilities → Skills**.
+- **Claude answers in plain text.** Check that the connector is added (the plugin's **Connectors**
+  tab, or **Customize → Connectors**) and turned on for this conversation (the tools menu in the
+  message box), then start a new conversation. Without the plugin, if it still happens, add the
+  skill, or check that it is turned on in **Customize → Skills**.
 - **The connector says it has no tools.** Open the connector in the tools menu and refresh its tool
   list. Releases before 0.20.1 could leave claude.ai with an empty list until that refresh.
-- **No "Skills" or "Add custom connector" in the settings.** These depend on your plan, and in a
-  Team or Enterprise organisation an admin may have to allow them. Skills may also require code
-  execution to be turned on in **Settings → Capabilities**.
+- **No "Plugins", "Skills" or "Add custom connector" in the settings.** These depend on your plan,
+  and in a Team or Enterprise organisation an admin may have to allow them. Skills may also require
+  code execution to be turned on in **Settings → Capabilities**.
 - **The interface is blank or shows an error.** Reload the page; your notes are kept as a draft.
 
 ### Run your own copy of the server
@@ -100,8 +122,8 @@ pnpm run deploy
 
 The last command prints your server's address, `https://point-by-point.<your-subdomain>.workers.dev`.
 On a new Cloudflare account you may first have to choose that subdomain, under **Workers & Pages**
-in the dashboard. Then follow the steps above with your address plus `/mcp` as the connector URL;
-the skill is the same. To get a new release later: `git pull && pnpm run deploy`.
+in the dashboard. Then follow [Without the plugin](#without-the-plugin) with your address plus `/mcp`
+as the connector URL; the skill is the same. To get a new release later: `git pull && pnpm run deploy`.
 
 ### For an organisation
 
