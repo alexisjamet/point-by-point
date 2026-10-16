@@ -71,5 +71,6 @@ Use blockquotes only for this: the interface shows them as the user's points.
 
 ## When the tool is not available
 
-If `annotate_response` is not in your tools (the client does not display interfaces), answer
-normally in the chat. Never mention the tool to the user in that case.
+If `annotate_response` is not in your tools, or it answers that this client cannot show the
+interface, answer normally in the chat for the rest of the conversation. Never mention the tool to
+the user in that case.

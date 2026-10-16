@@ -53,6 +53,9 @@ export const SERVER_INSTRUCTIONS = [
     "each with a blockquote of the user's note alone (not the sentence it is about), cut to about ten words, " +
     "then answer in normal paragraphs. With a single point, do not quote it. Use blockquotes for nothing " +
     "else: the interface shows them as the user's points.",
+  "",
+  `If ${TOOL_NAME} answers that this client cannot show the interface, write your responses in the chat ` +
+    `instead for the rest of the conversation, without calling ${TOOL_NAME} again.`,
 ].join("\n");
 
 // Worded as an instruction with no status to repeat: a result such as "Response displayed" was echoed
@@ -62,17 +65,21 @@ export const TOOL_RESULT_TEXT =
   "a sentence saying that the response is shown or open for annotation, in any language. Any text you " +
   "write would appear as a stray line under the interface.";
 
-/**
- * True when the client announced the MCP Apps extension. The MIME types it lists are not checked:
- * hosts cache a tool list, so one wrong "no" leaves the connector without tools until it is refreshed.
- */
+// The tool is declared to every client (see createServer), so a client that cannot render the
+// interface may still call it: the user then sees nothing, and Claude must write the response itself.
+export const NO_INTERFACE_RESULT_TEXT =
+  "This client cannot show the annotation interface, so the user has not seen this response. Write the " +
+  `same response in the chat now, as normal text, and keep writing in the chat for the rest of this ` +
+  `conversation without calling ${TOOL_NAME} again.`;
+
+/** True when the client announced the MCP Apps extension. The MIME types it lists are not checked. */
 export function supportsUi(capabilities: ClientCapabilities | null | undefined): boolean {
   return getUiCapability(capabilities) !== undefined;
 }
 
 type JsonRpcMessage = { method?: unknown; params?: { capabilities?: unknown; _meta?: Record<string, unknown> } };
 
-/** Whether to declare the tool, and which evidence decided it. `reason` is a fixed string, safe to log. */
+/** Whether the client renders the interface, and which evidence decided it. `reason` is a fixed string, safe to log. */
 export type UiSupport = { ui: boolean; reason: string };
 
 /**
@@ -80,8 +87,7 @@ export type UiSupport = { ui: boolean; reason: string };
  * - 2026-07-28 requests carry the client capabilities in their `_meta` envelope;
  * - a 2025 `initialize` carries them in its params;
  * - later 2025 requests echo the session id handed out at `initialize`, which encodes the answer.
- * A 2025 request without that session id is assumed to render interfaces: an empty tool list would
- * stick in the host's cache, which costs more than the tool reaching a client that cannot show it.
+ * A 2025 request without that session id is assumed to render interfaces, like claude.ai.
  */
 export function uiSupportFromRequest(body: unknown, sessionId: string | null): UiSupport {
   const message = (Array.isArray(body) ? body[0] : body) as JsonRpcMessage | undefined;
@@ -113,15 +119,18 @@ const inputSchema = {
 };
 
 /**
- * One server instance per request. The annotation tool is only declared to clients that render
- * interfaces: elsewhere the user would see nothing, since Claude no longer writes in the chat.
+ * One server instance per request. The tool and the instructions are the same for every client:
+ * claude.ai keeps one tool list per connector, shared by all the user's apps, so a list served to a
+ * client without interfaces (an empty one, in 0.10 to 0.20) stuck everywhere until the user
+ * refreshed it. The difference is made when the tool is called: a client that cannot render the
+ * interface gets a result asking Claude to write the response in the chat.
  */
 export function createServer(options: { ui: boolean }): McpServer {
   const server = new McpServer(
     { name: "point-by-point", title: "Point by point", version: VERSION },
     {
       capabilities: { tools: {}, resources: {} },
-      instructions: options.ui ? SERVER_INSTRUCTIONS : undefined,
+      instructions: SERVER_INSTRUCTIONS,
     },
   );
 
@@ -159,31 +168,30 @@ export function createServer(options: { ui: boolean }): McpServer {
     }),
   );
 
-  if (options.ui) {
-    registerAppTool(
-      server,
-      TOOL_NAME,
-      {
-        title: "Annotate response",
-        description: TOOL_DESCRIPTION,
-        inputSchema,
-        annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-        _meta: { ui: { resourceUri: UI_URI } },
-      },
-      async ({ markdown }) => {
-        if (markdown.trim() === "") {
-          return {
-            isError: true,
-            content: [{ type: "text", text: "The response is empty: pass the complete response as markdown." }],
-          };
-        }
+  registerAppTool(
+    server,
+    TOOL_NAME,
+    {
+      title: "Annotate response",
+      description: TOOL_DESCRIPTION,
+      inputSchema,
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+      _meta: { ui: { resourceUri: UI_URI } },
+    },
+    async ({ markdown }) => {
+      if (markdown.trim() === "") {
         return {
-          content: [{ type: "text", text: TOOL_RESULT_TEXT }],
-          structuredContent: { createdAt: Date.now() },
+          isError: true,
+          content: [{ type: "text", text: "The response is empty: pass the complete response as markdown." }],
         };
-      },
-    );
-  }
+      }
+      if (!options.ui) return { content: [{ type: "text", text: NO_INTERFACE_RESULT_TEXT }] };
+      return {
+        content: [{ type: "text", text: TOOL_RESULT_TEXT }],
+        structuredContent: { createdAt: Date.now() },
+      };
+    },
+  );
 
   return server;
 }

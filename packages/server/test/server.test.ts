@@ -1,7 +1,13 @@
 import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import worker from "../src/index";
-import { MAX_MARKDOWN_LENGTH, SERVER_INSTRUCTIONS, TOOL_NAME, TOOL_RESULT_TEXT } from "../src/server";
+import {
+  MAX_MARKDOWN_LENGTH,
+  NO_INTERFACE_RESULT_TEXT,
+  SERVER_INSTRUCTIONS,
+  TOOL_NAME,
+  TOOL_RESULT_TEXT,
+} from "../src/server";
 import { UI_URI } from "../src/ui.generated";
 
 const UI_CAPABILITIES = { extensions: { "io.modelcontextprotocol/ui": { mimeTypes: ["text/html;profile=mcp-app"] } } };
@@ -33,20 +39,23 @@ describe.each<Era>(["legacy", "modern"])("%s protocol", (era) => {
     await client.close();
   });
 
-  it("hides the tool from a client without interface support", async () => {
-    const client = await connect({ ui: false, era });
-    const { tools } = await client.listTools();
-    expect(tools.map((tool) => tool.name)).not.toContain(TOOL_NAME);
-    await client.close();
+  it("serves the same tool list and instructions to a client without interface support", async () => {
+    const withUi = await connect({ ui: true, era });
+    const withoutUi = await connect({ ui: false, era });
+    expect((await withoutUi.listTools()).tools).toEqual((await withUi.listTools()).tools);
+    expect(withUi.getInstructions()).toBe(SERVER_INSTRUCTIONS);
+    expect(withoutUi.getInstructions()).toBe(SERVER_INSTRUCTIONS);
+    await withUi.close();
+    await withoutUi.close();
   });
 
-  it("gives the skill's rules as instructions only to a client that renders interfaces", async () => {
-    const withUi = await connect({ ui: true, era });
-    expect(withUi.getInstructions()).toBe(SERVER_INSTRUCTIONS);
-    await withUi.close();
-    const withoutUi = await connect({ ui: false, era });
-    expect(withoutUi.getInstructions()).toBeUndefined();
-    await withoutUi.close();
+  it("asks Claude to answer in the chat when the client cannot show the interface", async () => {
+    const client = await connect({ ui: false, era });
+    const result = await client.callTool({ name: TOOL_NAME, arguments: { markdown: "Hello. World." } });
+    expect(result.isError).toBeFalsy();
+    expect(result.content).toEqual([{ type: "text", text: NO_INTERFACE_RESULT_TEXT }]);
+    expect(result.structuredContent).toBeUndefined();
+    await client.close();
   });
 
   it("exposes the tool when the ui extension lists no MIME type", async () => {
@@ -127,7 +136,7 @@ function modernToolsList(capabilities: object, cursor?: string) {
   );
 }
 
-describe("tool list decisions", () => {
+describe("interface decisions", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("exposes the tool to a 2025 request without a session id", async () => {
@@ -135,11 +144,11 @@ describe("tool list decisions", () => {
     expect(reply.result.tools.map((tool: { name: string }) => tool.name)).toContain(TOOL_NAME);
   });
 
-  it("logs a fixed line, and nothing from the request, when it hides the tool", async () => {
+  it("logs a fixed line, and nothing from the request, for a client without the interface", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const reply = await modernToolsList({ sampling: {} }, "conversation-text-must-not-leak");
-    expect(reply.result.tools).toEqual([]);
-    expect(log.mock.calls).toEqual([[`tools/list without ${TOOL_NAME}: 2026 envelope without the ui extension`]]);
+    expect(reply.result.tools.map((tool: { name: string }) => tool.name)).toContain(TOOL_NAME);
+    expect(log.mock.calls).toEqual([["tools/list from a client without the interface: 2026 envelope without the ui extension"]]);
   });
 
   it("traces each 2025 request with its method and the decision taken", async () => {
@@ -151,7 +160,7 @@ describe("tool list decisions", () => {
       params: { protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "python", version: "1" } },
     });
     expect(log.mock.calls).toEqual([
-      ["2025 POST initialize, protocol none, status 200, tool hidden: 2025 initialize without the ui extension"],
+      ["2025 POST initialize, protocol none, status 200, interface no: 2025 initialize without the ui extension"],
     ]);
   });
 
@@ -163,11 +172,11 @@ describe("tool list decisions", () => {
     );
     expect(log).toHaveBeenCalledTimes(1);
     const [line] = log.mock.calls[0] ?? [];
-    expect(line).toMatch(/^2025 POST other, protocol other, status \d+, tool declared: /);
+    expect(line).toMatch(/^2025 POST other, protocol other, status \d+, interface yes: /);
     expect(line).not.toContain("conversation");
   });
 
-  it("logs nothing when it exposes the tool", async () => {
+  it("logs nothing for a client that renders the interface", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const reply = await modernToolsList(UI_CAPABILITIES);
     expect(reply.result.tools.map((tool: { name: string }) => tool.name)).toContain(TOOL_NAME);

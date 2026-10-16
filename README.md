@@ -76,6 +76,8 @@ an interface:
 - **Claude answers in plain text.** Check that the connector is turned on for this conversation
   (the tools menu in the message box), then start a new conversation. If it still happens, add the
   skill (step 2), or check that it is turned on in **Settings → Capabilities → Skills**.
+- **The connector says it has no tools.** Open the connector in the tools menu and refresh its tool
+  list. Releases before 0.20.1 could leave claude.ai with an empty list until that refresh.
 - **No "Skills" or "Add custom connector" in the settings.** These depend on your plan, and in a
   Team or Enterprise organisation an admin may have to allow them. Skills may also require code
   execution to be turned on in **Settings → Capabilities**.
@@ -162,10 +164,12 @@ To trust no one but Cloudflare, [run your own copy](#run-your-own-copy-of-the-se
 
 What the code guarantees:
 
-- **No storage, no content logs.** No KV, D1, R2 or Durable Objects. The Worker logs errors and, to
-  diagnose a connector that shows no tools, one line per tool list served without the tool and per
-  2025-protocol request (method name, protocol version, status, whether the tool is declared). These
-  lines are built from fixed strings only: never the markdown or anything else from the request.
+- **No storage, no content logs.** No KV, D1, R2 or Durable Objects. The Worker logs a few
+  diagnostic lines: the name of an error, each tool list or call from a client that does not show
+  interfaces, and each 2025-protocol request (method name, protocol version, status, whether the
+  client shows interfaces). These lines are built from fixed strings only: never the markdown or
+  anything else from the request. Cloudflare keeps them for a few days (Workers Logs), without the
+  request URLs or headers.
 - **No outbound calls**, from the server or the interface. Everything is inlined in one HTML file:
   no CDN script, font or image.
 - **Sanitised rendering.** Markdown goes through `marked` then DOMPurify with a strict allow-list;

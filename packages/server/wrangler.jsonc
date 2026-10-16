@@ -5,6 +5,11 @@
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat"],
   // No KV, D1, R2 or Durable Objects: the server stores nothing.
+  // Cloudflare keeps the Worker's own log lines for a few days, so a problem seen in the morning can
+  // still be read. They are built from fixed strings only. Invocation logs (URL, headers) stay off.
+  "observability": {
+    "logs": { "enabled": true, "head_sampling_rate": 1, "invocation_logs": false }
+  },
   // Per client IP. claude.ai reaches MCP servers from a few shared Anthropic IPs, so the limit is
   // generous: it caps a single abusive client without throttling everyone behind those IPs.
   "ratelimits": [
