@@ -114,6 +114,7 @@ test("a code block is copied, not annotated", async ({ page, context }) => {
   await frame.locator("pre").click();
   await expect(frame.locator(".note")).toHaveCount(0);
   await frame.locator(".code-copy").click();
+  await expect(frame.locator(".code-copy")).toHaveAttribute("data-state", "copied");
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("npm run migrate");
 });
 
