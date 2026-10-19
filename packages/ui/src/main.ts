@@ -840,7 +840,7 @@ content.addEventListener("click", async (event) => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".code-copy");
   const code = button?.parentElement?.querySelector("pre")?.textContent;
   if (!button || code == null) return;
-  const copied = await copyCode(code);
+  const copied = await copyCode(code.replace(/\n$/, ""));
   button.dataset.state = copied ? "copied" : "failed";
   button.setAttribute("aria-label", copied ? s.codeCopied : s.codeCopyFailed);
   setTimeout(() => {
