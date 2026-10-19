@@ -107,10 +107,14 @@ test("annotates a free selection with its exact text", async ({ page }) => {
   await expect.poll(async () => (await recorded(page)).messages).toEqual(["`switch traffic` When?"]);
 });
 
-test("a code block is one annotation unit", async ({ page }) => {
+test("a code block is copied, not annotated", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const frame = await mount(page);
-  await frame.locator("pre.phrase").click();
-  await expect(frame.locator(".note-quote")).toHaveText("npm run migrate");
+  await expect(frame.locator("pre .phrase")).toHaveCount(0);
+  await frame.locator("pre").click();
+  await expect(frame.locator(".note")).toHaveCount(0);
+  await frame.locator(".code-copy").click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe("npm run migrate");
 });
 
 test("a table cell's note goes under the table frame, and the markdown alignment holds", async ({ page }) => {
