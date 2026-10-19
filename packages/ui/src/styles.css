@@ -151,6 +151,7 @@ body {
 .response ol,
 .response blockquote,
 .response pre,
+.response .code-block,
 .response .table-wrap {
   margin: 0 0 0.85em;
 }
@@ -196,6 +197,52 @@ body {
   background: var(--pbp-surface);
   border-radius: 4px;
   padding: 0.1em 0.3em;
+}
+
+.response .code-block {
+  position: relative;
+}
+
+.response .code-block pre {
+  margin: 0;
+}
+
+.response .code-copy {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--pbp-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 150ms ease, background-color 150ms ease;
+  /* Two overlapping sheets; a check mark replaces them once copied. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23888' stroke-width='1.4'%3E%3Crect x='5.5' y='5.5' width='8' height='8' rx='1.5'/%3E%3Cpath d='M10.5 5.5v-2a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.500 3.500V9A1.5 1.5 0 0 0 4 10.500h1.500'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 16px;
+}
+
+.response .code-block:hover .code-copy,
+.response .code-copy:focus-visible,
+.response .code-copy[data-state] {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .response .code-copy { opacity: 1; }
+}
+
+.response .code-copy:hover {
+  background-color: color-mix(in srgb, var(--pbp-text) 10%, transparent);
+}
+
+.response .code-copy[data-state="copied"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 8.500l3.500 3.500L13 4.500'/%3E%3C/svg%3E");
 }
 
 .response pre {
@@ -376,13 +423,6 @@ body {
 .response span.phrase.annotated-passage,
 .response:not(.streaming) span.phrase.hovered {
   background-size: 100% 88%;
-}
-
-/* A code block is one unit: a flat tint suits it better than a stroke. */
-.response .phrase-unit.annotated,
-.response .phrase-unit.annotated-passage,
-.response:not(.streaming) .phrase-unit.hovered {
-  background-color: var(--pbp-mark);
 }
 
 ::highlight(pbp-selection) {
@@ -898,10 +938,6 @@ body.sheet:not(.focus-mode) #app {
 
 @keyframes pbp-rise {
   from { opacity: 0; transform: translateY(6px); }
-}
-
-.response .phrase-unit {
-  transition: background-color 200ms ease;
 }
 
 .note {
