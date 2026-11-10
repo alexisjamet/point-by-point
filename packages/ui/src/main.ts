@@ -550,30 +550,16 @@ content.addEventListener("click", (event) => {
     return;
   }
   if (!ready || target.closest(".note")) return;
+  // A mouse annotates what it selects, so a click only places the caret. A tap still annotates its
+  // sentence, since selecting by touch is slow.
+  const pointer = (event as PointerEvent).pointerType;
+  if (pointer ? pointer === "mouse" : !isTouch()) return;
   const selection = window.getSelection();
   if (selection && !selection.isCollapsed && content.contains(selection.anchorNode)) return;
   const phrase = target.closest<HTMLElement>(".phrase[data-s]");
   const sentence = phrase && sentences[Number(phrase.dataset.s)];
   if (sentence) annotateSentence(sentence);
 });
-
-// The sentence under the mouse gets the annotation's highlighter stroke, on all its spans at once (a
-// sentence is split into several spans around bold text or links).
-let hoveredSentence: Sentence | null = null;
-
-function hoverSentence(sentence: Sentence | null) {
-  if (sentence === hoveredSentence) return;
-  for (const span of hoveredSentence?.spans ?? []) span.classList.remove("hovered");
-  hoveredSentence = sentence;
-  for (const span of sentence?.spans ?? []) span.classList.add("hovered");
-}
-
-content.addEventListener("pointerover", (event) => {
-  if (event.pointerType !== "mouse") return;
-  const phrase = (event.target as HTMLElement).closest<HTMLElement>(".phrase[data-s]");
-  hoverSentence(ready && phrase && !phrase.closest(".note") ? (sentences[Number(phrase.dataset.s)] ?? null) : null);
-});
-content.addEventListener("pointerleave", () => hoverSentence(null));
 
 /** True while the user types in a note: selections there belong to the field. */
 function editingText(): boolean {
